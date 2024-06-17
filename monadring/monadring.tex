@@ -15,27 +15,30 @@
 
 \begin{document}
 
-\title{Monadring: A lightweight consensus algorithm for organizing subnets upon a blockchain system}
+\title{Monadring: A lightweight consensus protocol for organizing subnets upon a blockchain system}
 \author{Zhang Yu, Gang Tang}
 \date{June 15, 2024}
 \maketitle
 
 \begin{abstract}
-Existing blockchain networks are often large-scale, requiring transactions to be synchronized across the entire network to reach consensus, and on-chain computations can be prohibitively expensive, making many CPU-sensitive computations infeasible. Inspired by the structure of IBM's token ring networks, we propose a lightweight consensus algorithm called Monadring to address these issues. Monadring allows nodes that are already part of a large blockchain network to form a smaller subnetwork to perform computations more quickly and cheaply, while still maintaining the same security guarantees as the main blockchain network. The paper details the design and implementation of the Monadring algorithm, and evaluates its performance and feasibility through simulation experiments. This research contributes to enhancing the practical utility of blockchain technology in large-scale application scenarios.
+Existing blockchain networks are often large-scale, requiring transactions to be synchronized across the entire network to reach consensus, and on-chain computations can be prohibitively expensive, making many CPU-sensitive computations infeasible.
+Inspired by the structure of IBM's token ring networks, we propose a lightweight consensus protocol called Monadring to address these issues.
+Monadring allows nodes that are already part of a large blockchain network to form a smaller subnetwork to perform computations more quickly and cheaply, while still maintaining the same security guarantees as the main blockchain network.
+The paper details the design and implementation of the Monadring protocol, and evaluates its performance and feasibility through simulation experiments.
+This research contributes to enhancing the practical utility of blockchain technology in large-scale application scenarios.
 \end{abstract}
 
 \section{Introduction}
-
 Recent blockchain systems have often adopted faster and more energy-efficient consensus protocols like Ouroboros, BABE, and Tendermint.
 Blockchain networks are typically open and permissionless, and we can define the degree of decentralization of such networks by the number of participating nodes.
-Leveraging the consensus algorithms mentioned earlier, it is possible to rapidly construct new blockchain networks.
+Leveraging the consensus protocols mentioned earlier, it is possible to rapidly construct new blockchain networks.
 However, decentralized applications often cannot flexibly customize their degree of decentralization based on the importance of their underlying data.
 
 For example, decentralized social media applications may require faster response times and lower storage costs compared to decentralized finance applications, and hence may need a lower degree of decentralization.
 This flexibility to adjust the level of decentralization based on the needs of the application is an important consideration that has not been fully addressed in existing blockchain architectures.
 
 Building a subnetwork over an existing blockchain system is a possible way to address this issue.
-By drawing inspiration from the token ring architecture, we propose a novel consensus algorithm called Monadring that aims to enable nodes within an existing blockchain network to form smaller, lightweight subnetworks capable of performing computations more efficiently and cost-effectively, while still maintaining the same security guarantees as the main blockchain.
+By drawing inspiration from the token ring architecture, we propose a novel consensus protocol called Monadring that aims to enable nodes within an existing blockchain network to form smaller, lightweight subnetworks capable of performing computations more efficiently and cost-effectively, while still maintaining the same security guarantees as the main blockchain.
 
 Token ring network operates at the data link layer of the OSI/RM model.
 It was designed to solve the problem of physical link contention just like Ethernet.
@@ -67,20 +70,20 @@ The ledger is expected to be in a deterministic state after the $n_{th}$ event b
 \item The time complexity of retrieving the maximum event id is $O(1)$.
 \end{itemize}
 
-
 \paragraph{Subnet topology and token.}
-
 The participants of the subnet strictly follows the sequence of the \textit{node list} to form a ring topology.
 A \textit{token} $T$ of a subnet with $n$ nodes is a special signal circulates around the ring following the sequence of the \textit{node list}.
 
 \begin{itemize}
 \item The token carries groups of events from its sender and the sender{'}s forehead recursively.
 Group $G_{i}$ is composed by the node $v_{i}$. It contains a list of modification events originally from its pending request queue, the node{'}s digital signature, a digest of its local ledger after these modification applied, a number $q$ indicates how many times this group should delivered and the nonce of the signer:
-        \[G_{i} = (E = [e_{k}, e_{k+1}..e_{k+n}], S_{k+n}, signature(nonce, E, S_{k+n}), nonce, q)\]
-The event list $E$ could be empty.
+\begin{equation}
+G_{i} = (E = [e_{k}, e_{k+1}..e_{k+n}], S_{k+n}, sig(nonce, E, S_{k+n}), nonce, q)
+\end{equation}
+The event list $E$ could be empty, the q could be negative.
 
 \item Normally, a token circulates in a subnet with $n$ nodes should always include $n$ groups unless there were malicious behaviors or some nodes went offline.
-Whenever a node receives the token, it ought to check the signature and $q$ for each group.
+Whenever a node receives the token, it ought to check the signature for each group.
 Then applying all the events of each group and compare the digest with the local ledger.
 The $q$ of executed groups should be decreased by 1.
 
@@ -88,9 +91,33 @@ The $q$ of executed groups should be decreased by 1.
 Then try to deliver the token to its successor.
 \end{itemize}
 
-\paragraph{Malicious behaviours and offline.} TODO
+Assume a subnet with $n$ nodes \( v_{0}, v_{1} .. v_{n-1}, n\geq 3\). Normally, when a node $v_{i}$ receives the token $T$, noted as $T_{i}$.
+\begin{eqnarray}
+T_{i} &=& G_{i}, G_{(i + 1)\mod n},.., G_{(i + n - 1)\mod n}\\
+T_{i+1} &=& G_{i+1}, G_{(i+2)\mod n},..,G_{i}^{\prime}; i+1<n
+\end{eqnarray}
 
-\paragraph{Blind challenge.} TODO % Id like to describe that Monadring supports small set of participants. e.g. only 1 participant
+\paragraph{Join and leave a subnet.}
+
+\paragraph{Function upgrade.}
+
+\paragraph{Malicious behaviours and offline.}
+The hostnet can reach the Byzantine Agreement over $L$ based on an assumption that the ratio of honest participants $r > threshold$.
+We don{'}t expect that a subnet has a same ratio. We neither don{'}t expect that a node is honest on ledger $L$ would be honest on subnet legder $L_{i}$.
+We want to find a solution to detect the malicious behaviours and exclude them from the subnet by a provable invalidity.
+
+For simplify, we note $T_{i/i}$ as $T_{i}$ excluding the $i_{th}$ group. We can conclude that $T_{i/i}$ and $G_{i}$ must satisfy properties as below:
+
+\begin{itemize}
+\item The $q$ of $G_{i}$ satisfies \(q \leq 0\). $q=0$ implies no new nodes joined the subnet in this round, while $q < 0$ implies some new nodes have joined the subnet. The node $v_{i}$ can check the \textit{node list} from $L$.
+For rest $q$ of $\forall G \in T_{i/i}$ are similar.
+\item TODO check signatures.
+\item Assume the maximum event id of $G_{i}$ is $m$. Combine all event lists of $T_{i/i}$ as a single list $E_{i/i}$. Assume the minimal event id of $E_{i/i}$ is $n$.
+\(n = m+1\) and $m$ is the maximum event id of node $v_{i}$.
+\end{itemize}
+
+
+\paragraph{Blind challenge.} % Id like to describe that Monadring supports small set of participants. e.g. only 1 participant
 
 \section{The Monadring Protocol}
 
