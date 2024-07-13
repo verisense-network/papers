@@ -11,21 +11,31 @@
 \usepackage{capt-of}
 \usepackage{hyperref}
 
+\usepackage{draftwatermark}
+\SetWatermarkText{\shortstack
+  {Monadring: A lightweight consensus protocol for organizing subnets upon a blockchain system
+}}
+\SetWatermarkLightness{0.05}
+\SetWatermarkScale{0.5}
+
+
 \bibliographystyle{plain}
 
 \begin{document}
 
 \title{Monadring: A lightweight consensus protocol for organizing subnets upon a blockchain system}
-\author{Zhang Yu, Gang Tang}
+\author{Zhang Yu, Yan Xiao, Gang Tang}
 \date{June 15, 2024}
 \maketitle
 
 \begin{abstract}
 Existing blockchain networks are often large-scale, requiring transactions to be synchronized across the entire network to reach consensus, and on-chain computations can be prohibitively expensive, making many CPU-sensitive computations infeasible.
-Inspired by the structure of IBM's token ring networks, we propose a lightweight consensus protocol called Monadring to address these issues.
-Monadring allows nodes that are already part of a large blockchain network to form a smaller subnetwork to perform computations more quickly and cheaply, while still maintaining the same security guarantees as the main blockchain network.
-The paper details the design and implementation of the Monadring protocol, and evaluates its performance and feasibility through simulation experiments.
-This research contributes to enhancing the practical utility of blockchain technology in large-scale application scenarios.
+
+Inspired by the structure of IBM's token ring networks, we propose a lightweight consensus protocol called Monadring to address these issues. Monadring allows nodes that are already part of a large blockchain network to form a smaller subnetwork to perform computations more quickly and cheaply, while still maintaining the same security guarantees as the main blockchain network.
+
+To further enhance the security of Monadring, we introduce a node rotation mechanism based on Fully Homomorphic Encryption (FHE) within the smaller subnetwork. Unlike the common voting-based election of validator nodes, the election in Monadring leverages FHE to hide the voting information, eliminating the advantage of the last mover in the voting game.
+
+The paper details the design and implementation of the Monadring protocol, and evaluates its performance and feasibility through simulation experiments. This research contributes to enhancing the practical utility of blockchain technology in large-scale application scenarios.
 \end{abstract}
 
 \section{Introduction}
@@ -47,7 +57,102 @@ This token-based system for managing access to the shared medium bears some simi
 
 Despite the fact that token ring networks have largely fallen out of favor in modern networking due to their limited scalability and other drawbacks, the underlying principles of their decentralized, token-based structure could provide valuable insights for designing a lightweight consensus algorithm for small blockchain systems.
 
+Monadring also involves FHE-based member rotation mechanism to enhance the security.
+Homomorphic encryption (HE) is a method of encryption that allows computations to be carried out on encrypted data, generating an encrypted result which, when decrypted, matches the outcome of computations performed on the plaintext.
+This property enables sophisticated computations on encrypted data while maintaining data security.
+HE schemes are a type of encryption method that can protect data privacy because they allow computations to be performed directly on the encrypted data.
+For example, an HE scheme might allow a user to perform operations like addition and multiplication on encrypted numbers, and these operations would have the same result as if they were performed on the original, unencrypted numbers.
+This technology is seen as a key component for secure cloud computing since it allows complex data manipulations to be carried out on completely secure encrypted data.
+
+Fully Homomorphic Encryption (FHE) is a more advanced form of Homomorphic Encryption.
+FHE allows arbitrary computations to be carried out on encrypted data, which is not the case with normal HE which might be limited in the types of computation it supports.
+FHE computations generate a result that, when decrypted, corresponds to the result of the same computations performed on the plaintext.
+This makes FHE extremely useful for cases where sensitive data must be processed or analyzed, but security and privacy considerations prevent the data from being decrypted.
+With FHE, you can perform unlimited calculations on this encrypted data just like you would on unencrypted data. For instance, in the field of cloud computing, FHE allows users to operate computations on encrypted data stored in the cloud, preserving data confidentiality and privacy.
+
 \section{Definitions and Model}
+\subsection{FHE}
+Some of the more popular FHE frameworks include BFV, BGV and CKKS.
+\begin{itemize}
+\item \textbf{BGV (Brakerski-Gentry-Vaikuntanathan)}: The BGV scheme is a Fully Homomorphic Encryption (FHE) method, proposed by Zvika Brakerski, Craig Gentry, and Vinod Vaikuntanathan.
+It offers a choice of FHE schemes based on the learning with error (LWE) or ring-LWE problems that have substantial security against known attacks.
+BGV allows the encryption of a single bit at a time and the efficiency of the encryption is largely considered in cloud storage models.
+\item \textbf{BFV (Brakerski/Fan-Vercauteren)}: BFV is another homomorphic encryption scheme that is often considered for its practical performance alongside the BGV scheme.
+BFV supports a set of mathematical operations such as addition and multiplication to be performed directly on the encrypted data.
+It has been implemented efficiently and there have also been several optimizations proposed to enhance its performance in different applications.
+\item \textbf{CKKS (Cheon-Kim-Kim-Song)}: The CKKS scheme is known for being a Leveled Homomorphic Encryption method that supports approximate arithmetic operations over encrypted data.
+The CKKS scheme is especially suitable for computations involving real or complex numbers.
+Its ability to perform operations on encrypted data without the necessity for decryption makes it highly useful for maintaining data security during computations.
+\end{itemize}
+The Brakerski-Gentry-Vaikuntanathan (BGV) and Brakerski/Fan-Vercauteren (BFV) schemes differ mainly in how they encode information.
+BGV encodes messages in the least significant digit (LSD) of the integer, while BFV encodes messages in the most significant digit (MSD) of the integer.
+This difference can affect how the encrypted data is handled and manipulated during computations.
+
+\paragraph{Mathematic notations of FHE.}
+We define the symbol $\mathbb{Z}$ as the set of integers, $\mathbb{Q}$ as the field of rational numbers, $\mathbb{R}$ as the field of real numbers, and $\mathbb{C}$ as the field of complex numbers.
+
+Further, we define the polynomial cyclotomic ring $\mathcal{R}$ as follows: $$\mathcal{R}:=\mathbb{Z}[X]/(X^N+1)$$ Correspondingly, $\mathcal{R}_q$ is defined as $(\mathbb{Z}/q\mathbb{Z})[X]/(X^N+1)$, where typically $N=2^n$, that is, $N$ is an integer power of 2.
+
+We define a distribution as $\chi_{\sigma^2,\mu}$, where $\sigma^2$ denotes the variance and $\mu$ signifies the mean. The uniform ternary distribution and discrete Gaussian distribution are represented by $\chi_\mathcal{T}$ and $\chi_\mathcal{N}$ respectively. Considering the standard BFV encryption formula: $$\mathbf{a}\cdot \mathbf{s} +\Delta m +\mathbf{e}$$
+It's established that $\mathbf{a}\sim\chi_\mathcal{T}$ and $\mathbf{e}\sim\chi_{\mathcal{N}}$.
+Wherein, the probability density function of the discrete Gaussian distribution is represented as $\rho_{\mu,\sigma^2}=e^{-\lVert\mathbf{x}-\mathbf{\mu}\rVert^2/2\sigma^2}$.
+
+The expansion factor $\delta_\mathcal{R}$ is defined as $\lVert \mathbf{a}\cdot\mathbf{b}\rVert_\infty/(\lVert\mathbf{a}\rVert_\infty\cdot\lVert\mathbf{b}\rVert_\infty)$ where $\mathbf{a},\mathbf{b}\in \mathcal{R}$
+
+\paragraph{Shamir Secret Sharing Scheme.}
+Shamir's Secret Sharing is an algorithm in cryptography devised by Adi Shamir. It's a form of secret sharing, where a secret is divided into parts, giving each participant its own unique part. The unique feature of the algorithm is the minimal amount of parts, or shares, needed to reconstruct the secret.
+Here's a simple walkthrough of how Shamir's Secret Sharing can be used for threshold private key sharing:
+\begin{enumerate}
+\item Choose the Threshold: Define the threshold number $t$ below which knowing $t$ points gives no information about the secret, but $t$ points yields the secret.
+\item Generate a Polynomial: Generate a random polynomial of degree $t-1$ with the constant term being the secret (private key) to be shared. i.e. \begin{equation}\mathcal{P}(\mathbf{x})=a_0+a_1\mathbf{x}+a_2\mathbf{x}^2+\ldots+a_{t-1}\mathbf{x}^{t-1}
+\end{equation}
+\item Create Shares: Evaluate the polynomial at different points to get $n$ shares, where $n$ is the total number of participants. Each participant is given one share, which is a point on the polynomial. i.e. \begin{equation}s_i=\mathcal{P}(\mathbf{x}_i)\end{equation}
+\item Distribute the Shares: The shares of the private key are then distributed among the participants.
+The key property here is that any $t$ shares (points) are enough to reconstruct the polynomial (and hence discover the secret), whereas $t-1$ or fewer shares reveal no information about the secret.
+\item Reconstruct the Secret: When the need arises to use the private key (secret), any $t$ participants come together and combine their shares using polynomial interpolation (for example, via Lagrange interpolation) to reconstruct the polynomial and discover the constant term, which is the secret.
+\begin{equation}
+\mathcal{P}(x)=\sum^{t-1}_{i=0}s_i\prod_{j\neq i}\frac{x-s_j}{s_i-s_j}
+\end{equation}
+
+\end{enumerate}
+It is worth noting that all polynomials are defined over the ring of polynomials in $(\mathbb{Z}/p\mathbb{Z})[X]/X^{t}$ and the Lagrange interpolation still holds.
+
+This way, the private key (secret) is never explicitly revealed to any single party and no single party can access the secret alone.
+This is particularly useful in managing the risks associated with key management in cryptographic systems.
+It provides a balance between accessibility (through the threshold number of participants) and security (no single point of failure).
+
+\paragraph{BFV Scheme.}
+As described in the citation \cite{10.1007/978-3-642-32009-5_50, cryptoeprint:2012/144}, the BFV scheme proposes the method of placing the ciphertext in the Most Significant Digit (MSD) position, which makes the trend of noise growth change from quadratic to linear. This not only greatly reduces the influence of noise in the computation process, but also eliminates the need for modulus switching, thus effectively enhancing the computational efficiency.
+
+\begin{itemize}
+\item \texttt{BFV.SecretKeyGen($1^\lambda$)}: Generate a secret key $\texttt{sk}\leftarrow \chi_\mathcal{T}$.
+\item \texttt{BFV.PublicKeyGen(\texttt{sk})}: Generate a public key $\texttt{pk} =(\texttt{pk}_0,\texttt{pk}_1)= \left([-\mathbf{a}\cdot\mathbf{s}+\mathbf{e}]_{q}, \mathbf{a}\right)$ where $\mathbf{e}\leftarrow \chi_\mathcal{N}$ and $\mathbf{a}\leftarrow \chi_\mathcal{T}$.
+\item \texttt{BFV.Enc($\texttt{pk},\textbf{m}$)}: Message $\mathbf{m}\in \mathcal{R}_p$, where $p<q$. $\mathbf{u}\leftarrow \chi_\mathcal{T}$ and $\mathbf{e}_0, \mathbf{e}_1\leftarrow \chi_\mathcal{N}$. The ciphertext is $$\texttt{ct} = (\texttt{ct}_0,\texttt{ct}_1)=\left([\texttt{pk}_0\cdot\mathbf{u}+\Delta\cdot\mathbf{m}+\mathbf{e}_0]_{q},[\texttt{pk}_1\cdot\mathbf{u}+\mathbf{e}_1]_{q}\right)$$
+\item \texttt{BFV.Dec($\texttt{sk},\texttt{ct}$)}: $$\mathbf{m}=\left[\left\lfloor p\cdot[\texttt{ct}_0+\texttt{ct}_1\cdot\mathbf{s}]_q/q\right\rceil\right]_t$$
+\end{itemize}
+It is worth noting that the BFV scheme differs from the BGV scheme in that the BGV ciphertext is placed in LSD, i.e.
+\begin{itemize}
+\item \texttt{BGV.PublicKeyGen(\texttt{sk})}: $$\texttt{pk}=([-\mathbf{a}\cdot{s}+p\mathbf{e}]_q, \mathbf{a})$$
+\item \texttt{BGV.Enc($\texttt{pk},\textbf{m}$)}: $$\texttt{ct}=([ \mathbf{m}+\mathbf{u}\cdot\texttt{pk}_0+p\mathbf{e}_0]_q,[\mathbf{u}\cdot\texttt{pk}_1+p\mathbf{e}_1]_q)$$
+\end{itemize}
+We need to evaluate the effect of the encryption function $\texttt{Enc}$ and the decryption function $\texttt{Dec}$ on noise. Consider the following equation:
+\begin{equation}
+\texttt{ct}_0+\texttt{ct}_1\cdot{s}=\Delta\mathbf{m}+p\mathbf{v}
+\end{equation}
+
+The noise $\mathbf{v}$ can be evaluated by $\lVert\mathbf{v}\rVert_\infty < (q-p r_t(q))/(2p)$ where $r_p(q)=q-p\Delta$ which is a value determined by the modulus $q$, the plaintext scaling factor $\Delta$ and the noise ratio $p$.
+
+This condition exists because during the decryption process we actually perform a $p/q$ scaling operation. This scaling operation may amplify the effect of the noise, so we need to make sure that the size of the noise is within an acceptable range before decryption.
+
+% \begin{equation}
+% 	\begin{aligned}
+% 		\texttt{BFV.EvalAdd($\texttt{ct}_1,\texttt{ct}_2$)}&=(\texttt{ct}_1+\texttt{ct}_2)_0,(\texttt{ct}_1+\texttt{ct}_2)_1\\
+% 		\texttt{BFV.EvalMul($\texttt{ct}_1,\texttt{ct}_2$)}&=(\texttt{ct}_1\cdot\texttt{ct}_2)_0,(\texttt{ct}_1\cdot\texttt{ct}_2)_1
+% 	\end{aligned}
+% \end{equation}
+% This chapter primarily addresses the wireless signal strength model, focusing particularly on the signal transmission model applicable to space satellites and terrestrial receivers. Central to the discussion are two key assumptions pivotal to consensus algorithms: spatial continuity and temporal continuity. Instead of delving deep into the intricacies of the related formulas, this chapter accords higher importance to the qualitative conclusions derived from these equations.
+
+\subsection{Network Architecture}
 \paragraph{Hostnet and subnet.}
 Consider a network composed of a set of participants $V$ in which the majority obey a protocol to reach Byzantine Agreement and finality\cite{grandpa} over ledger $L$. $S_{i}$ is a subset of $V$, \( V = S_{0} \cup S_{1} \cup .. \cup S_{n-1}  \). We call $V$ is a \textit{hostnet} and $S_{i}$ is a \textit{subnet} of $V$.
 \begin{itemize}
