@@ -235,5 +235,46 @@ For rest $q$ of $\forall G \in T_{i/i}$ are similar.
 
 \section{The Monadring Protocol}
 
+\section{Game Theory}
+\subsection{Basic Definitions}
+In any game, we have a set of players, denoted by $\mathcal{P}_i=\{1,2,...,n\}$. Each player $i$ in this set has a corresponding strategy space, $\Sigma_i$, which contains all the possible strategies that player $i$ can adopt. A particular strategy that player $i$ chooses to play is represented by $\sigma_i$, which is an element of $\Sigma_i$.
+In a multiplayer game, it's often crucial to consider the strategies of the other players when deciding one's own strategy. We denote the strategy profile of all players other than player $i$ by $\sigma_{-i}$, which is an element of $\Sigma_{-i}$. The strategy space $\Sigma_{-i}$ thus represents all possible combinations of strategies for the players other than player $i$.
+\begin{itemize}
+  \item \textbf{Perfect Information Games:} In a perfect information game, every player has complete knowledge of all past actions and decisions within the game. This means that the sequence of play is fully observable, revealing all actions by all players, for every player.
+  \item \textbf{Imperfect Information Games:} An imperfect information game is one in which the entire sequence of previous actions and decisions is not fully observable for all players. Players may have private information, and each player typically has different information regarding the past. The players must then make decisions based on their own private information and whatever public information is available.
+  \end{itemize}
+
+\subsubsection{Nash Equilibrium}
+The concept of Nash equilibrium is central to game theory. It represents a state of the game where no player can gain any advantage by unilaterally changing their strategy, given that the strategies of all other players remain fixed.
+The best response function of player $i$, denoted by $\texttt{BR}i(\sigma{-i})$, is defined as the strategy that maximizes player $i$'s utility or payoff, $\pi_i$, given the strategies of all other players, $\sigma_{-i}$. Mathematically, this is represented as:
+\begin{equation}
+\texttt{BR}_i(\sigma_{-i}) = \arg\max_{\sigma_i \in \Sigma_i} \pi_i(\sigma_i,\sigma_{-i})
+\end{equation}
+A strategy profile $\sigma^*$ is said to be a Nash equilibrium if for all players $i$, the strategy $\sigma_i^*$ is the best response to the strategies of all other players, $\sigma_{-i}^*$. This means that no player can improve their utility by unilaterally deviating from their strategy in a Nash equilibrium.
+
+In game theory, achieving Nash equilibrium can be difficult in games with imperfect information, where players lack full knowledge about the game or the other players' actions and strategies.
+To address this, we often consider $\epsilon$-equilibrium, a more achievable concept in these scenarios. In an $\epsilon$-equilibrium, no player can gain more than a small value $\epsilon$ by changing their strategy alone, making it a practical approximation to Nash equilibrium in games with imperfect information.
+
+We define a strategy profile $\sigma^\epsilon_i$ to be an $\epsilon$-equilibrium if for all players i, we have:
+$$
+\pi_i(\sigma^\epsilon_i,\sigma^\epsilon_{-i}) \geq \pi_i(\sigma_i, \sigma^\epsilon_{-i}) - \epsilon
+$$
+This means that if a player deviates from his $\epsilon$-equilibrium strategy, his payoff can increase by at most $\epsilon$. 
+\subsubsection{Bayesian Game}
+A Bayesian game is a game in which players have private information that affects their payoffs. Each player has a type, which represents their private information, and the type of each player is drawn from a known probability distribution. The type of a player determines the player's payoff function, which is a function of the player's type and the strategies chosen by all players.
+We define the type space of player $i$ as $\Theta_i$, which represents all possible types that player $i$ can have. The type distribution of player $i$ is denoted by $p_i$, which is a probability distribution over $\Theta_i$.
+We use a quintuple to define a Bayesian game:
+\begin{equation}
+\Gamma = \langle \mathcal{P}, \{\Theta_i\}_{i\in\mathcal{P}}, \{\Sigma_i\}_{i\in\mathcal{P}}, \{\pi_i\}_{i\in\mathcal{P}}, \{p_i\}_{i\in\mathcal{P}} \rangle
+\end{equation}
+Where $\Theta_i$ is the type space, $\pi_i$ is the payoff function of player $i$, and $p_i$ is the type distribution of player $i$.
+The Bayesian Nash Equilibrium (BNE) is a generalization of the Nash equilibrium concept to Bayesian games. A strategy profile $\sigma^*$ is a Bayesian Nash equilibrium if for all players $i$ and all types $\theta_i$ of player $i$, the strategy $\sigma_i^*(\theta_i)$ is a best response to the strategies of all other players, given the type $\theta_i$ of player $i$.
+We can define the best response function of player $i$ given type $\theta_i$ as:
+\begin{equation}
+\sigma^\texttt{BNE}_i=\texttt{BR}^\texttt{BNE}_i(\theta_{-i},\sigma_{-i}) = \arg\max_{\substack{\sigma_i \in \Sigma_i \\ \theta_i\in \Theta_i}} \int_{\Theta_i} \pi_i(\sigma_i,\sigma^\texttt{BNE}_{-i},\theta_i,\theta_{-i})dP_i(\theta_{-i}|\theta_i)
+\end{equation}
+where $P_i=\prod_{j\neq i}p_j(\theta_j)$. In this paper we only consider symmetric Bayesian games, where all players have the same type space and type distribution.
+\subsection{Auction}
+
 \bibliography{monadring}
 \end{document}
