@@ -159,10 +159,10 @@ This condition exists because during the decryption process we actually perform 
 
 \subsection{Network Architecture}
 \paragraph{Hostnet and subnet.}
-Consider a network composed of a set of participants $\mathbb{V}$ in which the majority obey a protocol to reach Byzantine Agreement and finality\cite{grandpa} over ledger $\mathcal{L}$. $S_{i}$ is a subset of $\mathbb{V}$, \( \mathbb{V} = S_{0} \cup S_{1} \cup .. \cup S_{n-1}  \). We call $\mathbb{V}$ is a \textit{hostnet} and $S_{i}$ is a \textit{subnet} of $\mathbb{V}$.
+Consider a network composed of a set of participants $\mathbb{V}$ in which the majority obey a protocol to reach Byzantine Agreement and finality\cite{grandpa} over ledger $\mathcal{L}$. $S_{i}$ is a subset of $\mathbb{V}$, \( \mathbb{V} = S_{0} \cup S_{1} \cup .. \cup S_{n-1}  \). We call $\mathbb{V}$ is a \texttt{hostnet} and $S_{i}$ is a \texttt{subnet} of $\mathbb{V}$.
 \begin{itemize}
 \item A node participant \( v \in \mathbb{V} \) could be a member of any $S_{i}$ at meantime.\( v \in \mathbb{V}, v \in S_{m} \cap S_{n} \) is valid.
-\item We assume the ledger $\mathcal{L}$ of hostnet maintains all the subnets information in form of a mapping \textit{subnet id}\( \rightarrow \)\textit{node list}.
+\item We assume the ledger $\mathcal{L}$ of hostnet maintains all the subnets information in form of a mapping \texttt{subnetid}\( \rightarrow \)\texttt{nodelist}.
 \item Any participant of the hostnet could join a specific subnet through proposing a modification over ledger $\mathcal{L}$.
 \item Since the ledger $\mathcal{L}$ is under Byzantine Agreement by all participants, the map can be considered a provable information outside any subnets.
 \end{itemize}
@@ -183,16 +183,16 @@ The ledger is expected to be in a deterministic state after the $n_{th}$ event b
 \end{itemize}
 
 \paragraph{Subnet topology and token.}
-The participants of the subnet strictly follows the sequence of the \texttt{node list} to form a ring topology.
-A \texttt{token} $\mathcal{T}$ of a subnet with $n$ nodes is a special signal circulates around the ring following the sequence of the \texttt{node list}.
+The participants of the subnet strictly follows the sequence of the \texttt{nodelist} to form a ring topology.
+A \texttt{token} $\mathcal{T}$ of a subnet with $n$ nodes is a special signal circulates around the ring following the sequence of the \texttt{nodelist}.
 
 \begin{itemize}
 \item The token carries groups of events from its sender and the sender{'}s forehead recursively.
-Group $G_{i}$ is composed by the node $v_{i}$. It contains a list of modification events originally from its pending request queue, the node{'}s digital signature, a digest of its local ledger after these modification applied, a number $q$ indicates how many times this group should delivered and the nonce of the signer:
+Group $G_{i}$ is composed by the node $v_{i}$. It contains a list of modification events originally from its pending request queue, the node{'}s digital signature, a digest of its local ledger after these modification applied, a number $q$ indicates how many times this group should delivered, the \texttt{nonce} of the signer and \texttt{ct} represents the voting data using FHE:
 \begin{equation}
-G_{i} = (\mathbf{E} = [e_{k}, e_{k+1}..e_{k+n}], S_{k+n}, \texttt{sig}(\texttt{nonce}, \mathbf{E}, S_{k+n}), \texttt{nonce}, q)
+G_{i} = (\mathbf{E} = [e_{k}, e_{k+1}..e_{k+n}], S_{k+n}, \texttt{signature}, \texttt{nonce}, q, [\texttt{ct},..])
 \end{equation}
-The event list $\mathbf{E}$ could be empty, the $q$ could be negative.
+Where the $\mathbf{E}$ could be empty, the $q$ could be negative, the \(\texttt{signature} = \texttt{sig}(\texttt{nonce}, \mathbf{E}, S_{k+n}, \texttt{nodekey})\).
 
 \item Normally, a token circulates in a subnet with $n$ nodes should always include $n$ groups unless there were malicious behaviors or some nodes went offline.
 Whenever a node receives the token, it ought to check the signature for each group.
@@ -210,7 +210,17 @@ T_{i+1} &=& G_{i+1}, G_{(i+2)\mod n},..,G_{i}^{\prime}; i+1<n
 \end{eqnarray}
 
 \paragraph{Launching a subnet and rotating subnet members.}
-% this is related to FHE
+To launch a subnet, a publishing procedure similar to publishing a smart contract is required.
+It requires a deterministic function $f$ in form of executable binary code.
+
+Once the transaction is confirmed on the hostnet, any nodes can register to become nodes within the subnet.
+When the number of registered nodes reaches a certain \texttt{threshold}, these registered nodes will synchronize the function $f$ specified in the registration information and begin running it locally.
+The token $\mathcal{T}$ initializes following the order of member registering.
+And the \texttt{FHEKeyGen} procedure mentioned in the previous section will be executed.
+
+After surpassing the threshold for registered nodes, subnet nodes need to undergo periodic rotation to ensure randomness and reduce the potential for collusion.
+This rotation process can specifically utilize verifiable random function (VRF) to select nodes for rotation in and out of the subnet.
+
 \paragraph{Function upgrade.}
 Function upgrade is a kind of event which should be included in the token $G$ either.
 Only some specific users could initiate this event, wherein the subnet manager submit a transaction to modify the hostnet ledger $\mathcal{L}$ similar to registering a subnet.
@@ -219,21 +229,34 @@ Besides the function itself, a digest and version should be included in this tra
 Thus, once a upgrading transaction is confirmed by hostnet, any members of the subnet could include this event into token $\mathcal{T}$ if the hostnet ledger contains a higher version function but an associated event is absent in the token.
 
 \paragraph{Fault tolerence.}
-The hostnet can reach the Byzantine Agreement over $L$ based on an assumption that the ratio of honest participants $r > \texttt{threshold}$.
-We don{'}t expect that a subnet has a same ratio. We neither don{'}t expect that a node is honest on ledger $L$ would be honest on subnet legder $L_{i}$.
+The hostnet can reach the Byzantine Agreement over $\mathcal{L}$ based on an assumption that the ratio of honest participants $r > \texttt{threshold}$.
+We don{'}t expect that a subnet has a same ratio. We neither don{'}t expect that a node is honest on ledger $\mathcal{L}$ would be honest on subnet legder $L_{i}$.
 We want to find a solution to detect the malicious behaviours or nodes offline then exclude them from the subnet by a provable invalidity.
 
 For simplicity, we note $T_{i/i}$ as $T_{i}$ excluding the $i_{th}$ group. An valid $T_{i}$ must satisfy properties as below:
 
 \begin{itemize}
-\item The $q$ of $G_{i}$ satisfies \(q \leq 0\). $q=0$ implies no new nodes joined the subnet in this round, while $q < 0$ implies some new nodes have joined the subnet. The node $v_{i}$ can check the \textit{node list} from $L$.
+\item The $q$ of $G_{i}$ satisfies \(q \leq 0\). $q=0$ implies no new nodes joined the subnet in this round, while $q < 0$ implies some new nodes have joined the subnet. The node $v_{i}$ can check the \texttt{nodelist} from $L$.
 For rest $q$ of $\forall G \in T_{i/i}$ are similar.
-\item TODO check signatures.
+\item Group $G_{i} \in \mathcal{T}$ contains a signature using its \texttt{nodekey}.
 \item Assume the maximum event id of $G_{i}$ is $m$. Combine all event lists of $T_{i/i}$ as a single list $E_{i/i}$. Assume the minimal event id of $E_{i/i}$ is $n$.
 \(n = m+1\) and $m$ is the maximum event id of node $v_{i}$.
 \end{itemize}
 
+Given a token $\mathcal{T}$, any nodes can simply validate it.
+If there is a malicious behavior noted as \( \mathcal{G}_{i} = (.., \mathbf{E} = [e_{i}, e_{i+1}, ..], ..) \), the nearest honest successor could place its event group with the highest common agreed \texttt{eventid}.
+i.e. There are two conflicted groups $G_{i}^{\prime}$ and $\mathcal{G}_{i}$ in a token $\mathcal{T}$. The invalid one contains the node's signature could be used for slashing.
+
+
+The difference between this procedure and other BFT consensus algorithm is that the former one involves FHE to hide the voting information on each group.
+Thus, the subnet could efficiently adapt to small-scale networks and avoid collusion actions.
+
+% TODO: proof
+
 \section{The Monadring Protocol}
+
+\subsection{Substrate gadget}
+% TODO
 
 \bibliography{monadring}
 \end{document}

@@ -1,0 +1,22 @@
+\begin{thebibliography}{1}
+
+\bibitem{grandpa}
+Eleftherios Kokoris-Kogia Alistair~Stewart.
+\newblock Grandpa: a byzantine finality gadget.
+\newblock {\em arXiv:2007.01560}, 2020.
+
+\bibitem{10.1007/978-3-642-32009-5_50}
+Zvika Brakerski.
+\newblock Fully homomorphic encryption without modulus switching from classical
+  gapsvp.
+\newblock In Reihaneh Safavi-Naini and Ran Canetti, editors, {\em Advances in
+  Cryptology -- CRYPTO 2012}, pages 868--886, Berlin, Heidelberg, 2012.
+  Springer Berlin Heidelberg.
+
+\bibitem{cryptoeprint:2012/144}
+Junfeng Fan and Frederik Vercauteren.
+\newblock Somewhat practical fully homomorphic encryption.
+\newblock Cryptology ePrint Archive, Paper 2012/144, 2012.
+\newblock \url{https://eprint.iacr.org/2012/144}.
+
+\end{thebibliography}
