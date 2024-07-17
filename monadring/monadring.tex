@@ -38,7 +38,7 @@ Existing blockchain networks are often large-scale, requiring transactions to be
 
 Inspired by the structure of IBM's token ring networks, we propose a lightweight consensus protocol called Monadring to address these issues. Monadring allows nodes that are already part of a large blockchain network to form a smaller subnetwork to perform computations more quickly and cheaply, while still maintaining the same security guarantees as the main blockchain network.
 
-To further enhance the security of Monadring, we introduce a node rotation mechanism based on Fully Homomorphic Encryption (FHE) within the smaller subnetwork. Unlike the common voting-based election of validator nodes, the election in Monadring leverages FHE to hide the voting information, eliminating the advantage of the last mover in the voting game.
+To further enhance the security of Monadring, we introduce a node rotation mechanism based on Verifiable Random Function (VRF) and blind voting based on Fully Homomorphic Encryption (FHE) within the smaller subnetwork. Unlike the common voting-based election of validator nodes, the election in Monadring leverages FHE to hide the voting information, eliminating the advantage of the last mover in the voting game.
 
 The paper details the design and implementation of the Monadring protocol, and evaluates its performance and feasibility through simulation experiments. This research contributes to enhancing the practical utility of blockchain technology in large-scale application scenarios.
 \end{abstract}
@@ -75,25 +75,28 @@ FHE computations generate a result that, when decrypted, corresponds to the resu
 This makes FHE extremely useful for cases where sensitive data must be processed or analyzed, but security and privacy considerations prevent the data from being decrypted.
 With FHE, you can perform unlimited calculations on this encrypted data just like you would on unencrypted data. For instance, in the field of cloud computing, FHE allows users to operate computations on encrypted data stored in the cloud, preserving data confidentiality and privacy.
 
-\section{Definitions and Model}
+In small-scale decentralized networks with randomly determined members, the application of fully homomorphic encryption (FHE) for voting can be mathematically equivalent to the Prisoner's Dilemma. By incorporating appropriate incentive structures, it is possible to achieve both efficiency and security in such decentralized networks.
+
+\section{Essential Mathematics}
 \subsection{FHE}
 Some of the more popular FHE frameworks include BFV, BGV and CKKS.
-\begin{itemize}
-\item \textbf{BGV (Brakerski-Gentry-Vaikuntanathan)}: The BGV scheme is a Fully Homomorphic Encryption (FHE) method, proposed by Zvika Brakerski, Craig Gentry, and Vinod Vaikuntanathan.
+
+\paragraph{BGV (Brakerski-Gentry-Vaikuntanathan)}: The BGV scheme is a Fully Homomorphic Encryption (FHE) method, proposed by Zvika Brakerski, Craig Gentry, and Vinod Vaikuntanathan.
 It offers a choice of FHE schemes based on the learning with error (LWE) or ring-LWE problems that have substantial security against known attacks.
 BGV allows the encryption of a single bit at a time and the efficiency of the encryption is largely considered in cloud storage models.
-\item \textbf{BFV (Brakerski/Fan-Vercauteren)}: BFV is another homomorphic encryption scheme that is often considered for its practical performance alongside the BGV scheme.
+\paragraph{BFV (Brakerski/Fan-Vercauteren)}: BFV is another homomorphic encryption scheme that is often considered for its practical performance alongside the BGV scheme.
 BFV supports a set of mathematical operations such as addition and multiplication to be performed directly on the encrypted data.
 It has been implemented efficiently and there have also been several optimizations proposed to enhance its performance in different applications.
-\item \textbf{CKKS (Cheon-Kim-Kim-Song)}: The CKKS scheme is known for being a Leveled Homomorphic Encryption method that supports approximate arithmetic operations over encrypted data.
+\paragraph{CKKS (Cheon-Kim-Kim-Song)}: The CKKS scheme is known for being a Leveled Homomorphic Encryption method that supports approximate arithmetic operations over encrypted data.
+
 The CKKS scheme is especially suitable for computations involving real or complex numbers.
 Its ability to perform operations on encrypted data without the necessity for decryption makes it highly useful for maintaining data security during computations.
-\end{itemize}
+
 The Brakerski-Gentry-Vaikuntanathan (BGV) and Brakerski/Fan-Vercauteren (BFV) schemes differ mainly in how they encode information.
 BGV encodes messages in the least significant digit (LSD) of the integer, while BFV encodes messages in the most significant digit (MSD) of the integer.
 This difference can affect how the encrypted data is handled and manipulated during computations.
 
-\paragraph{Mathematic notations of FHE.}
+\subsubsection{Mathematic notations of FHE.}
 We define the symbol $\mathbb{Z}$ as the set of integers, $\mathbb{Q}$ as the field of rational numbers, $\mathbb{R}$ as the field of real numbers, and $\mathbb{C}$ as the field of complex numbers.
 
 Further, we define the polynomial cyclotomic ring $\mathcal{R}$ as follows: $$\mathcal{R}:=\mathbb{Z}[X]/(X^N+1)$$ Correspondingly, $\mathcal{R}_q$ is defined as $(\mathbb{Z}/q\mathbb{Z})[X]/(X^N+1)$, where typically $N=2^n$, that is, $N$ is an integer power of 2.
@@ -104,7 +107,7 @@ Wherein, the probability density function of the discrete Gaussian distribution 
 
 The expansion factor $\delta_\mathcal{R}$ is defined as $\lVert \mathbf{a}\cdot\mathbf{b}\rVert_\infty/(\lVert\mathbf{a}\rVert_\infty\cdot\lVert\mathbf{b}\rVert_\infty)$ where $\mathbf{a},\mathbf{b}\in \mathcal{R}$
 
-\paragraph{Shamir Secret Sharing Scheme.}
+\subsubsection{Shamir Secret Sharing Scheme.}
 Shamir's Secret Sharing is an algorithm in cryptography devised by Adi Shamir. It's a form of secret sharing, where a secret is divided into parts, giving each participant its own unique part. The unique feature of the algorithm is the minimal amount of parts, or shares, needed to reconstruct the secret.
 Here's a simple walkthrough of how Shamir's Secret Sharing can be used for threshold private key sharing:
 \begin{enumerate}
@@ -126,7 +129,7 @@ This way, the private key (secret) is never explicitly revealed to any single pa
 This is particularly useful in managing the risks associated with key management in cryptographic systems.
 It provides a balance between accessibility (through the threshold number of participants) and security (no single point of failure).
 
-\paragraph{BFV Scheme.}
+\subsubsection{BFV Scheme.}
 As described in the citation \cite{10.1007/978-3-642-32009-5_50, cryptoeprint:2012/144}, the BFV scheme proposes the method of placing the ciphertext in the Most Significant Digit (MSD) position, which makes the trend of noise growth change from quadratic to linear. This not only greatly reduces the influence of noise in the computation process, but also eliminates the need for modulus switching, thus effectively enhancing the computational efficiency.
 
 \begin{itemize}
@@ -150,25 +153,76 @@ The noise $\mathbf{v}$ can be evaluated by $\lVert\mathbf{v}\rVert_\infty < (q-p
 This condition exists because during the decryption process we actually perform a $p/q$ scaling operation. This scaling operation may amplify the effect of the noise, so we need to make sure that the size of the noise is within an acceptable range before decryption.
 
 % \begin{equation}
-% 	\begin{aligned}
-% 		\texttt{BFV.EvalAdd($\texttt{ct}_1,\texttt{ct}_2$)}&=(\texttt{ct}_1+\texttt{ct}_2)_0,(\texttt{ct}_1+\texttt{ct}_2)_1\\
-% 		\texttt{BFV.EvalMul($\texttt{ct}_1,\texttt{ct}_2$)}&=(\texttt{ct}_1\cdot\texttt{ct}_2)_0,(\texttt{ct}_1\cdot\texttt{ct}_2)_1
-% 	\end{aligned}
+% \begin{aligned}
+% \texttt{BFV.EvalAdd($\texttt{ct}_1,\texttt{ct}_2$)}&=(\texttt{ct}_1+\texttt{ct}_2)_0,(\texttt{ct}_1+\texttt{ct}_2)_1\\
+% \texttt{BFV.EvalMul($\texttt{ct}_1,\texttt{ct}_2$)}&=(\texttt{ct}_1\cdot\texttt{ct}_2)_0,(\texttt{ct}_1\cdot\texttt{ct}_2)_1
+% \end{aligned}
 % \end{equation}
 % This chapter primarily addresses the wireless signal strength model, focusing particularly on the signal transmission model applicable to space satellites and terrestrial receivers. Central to the discussion are two key assumptions pivotal to consensus algorithms: spatial continuity and temporal continuity. Instead of delving deep into the intricacies of the related formulas, this chapter accords higher importance to the qualitative conclusions derived from these equations.
 
-\subsection{Network Architecture}
-\paragraph{Hostnet and subnet.}
-Consider a network composed of a set of participants $\mathbb{V}$ in which the majority obey a protocol to reach Byzantine Agreement and finality\cite{grandpa} over ledger $\mathcal{L}$. $S_{i}$ is a subset of $\mathbb{V}$, \( \mathbb{V} = S_{0} \cup S_{1} \cup .. \cup S_{n-1}  \). We call $\mathbb{V}$ is a \texttt{hostnet} and $S_{i}$ is a \texttt{subnet} of $\mathbb{V}$.
+\subsection{Game Theory}
+\subsubsection{Basic Definitions}
+In any game, we have a set of players, denoted by $\mathcal{P}_i=\{1,2,...,n\}$. Each player $i$ in this set has a corresponding strategy space, $\Sigma_i$, which contains all the possible strategies that player $i$ can adopt. A particular strategy that player $i$ chooses to play is represented by $\sigma_i$, which is an element of $\Sigma_i$.
+In a multiplayer game, it's often crucial to consider the strategies of the other players when deciding one's own strategy. We denote the strategy profile of all players other than player $i$ by $\sigma_{-i}$, which is an element of $\Sigma_{-i}$. The strategy space $\Sigma_{-i}$ thus represents all possible combinations of strategies for the players other than player $i$.
 \begin{itemize}
-\item A node participant \( v \in \mathbb{V} \) could be a member of any $S_{i}$ at meantime.\( v \in \mathbb{V}, v \in S_{m} \cap S_{n} \) is valid.
+  \item \textbf{Perfect Information Games:} In a perfect information game, every player has complete knowledge of all past actions and decisions within the game. This means that the sequence of play is fully observable, revealing all actions by all players, for every player.
+  \item \textbf{Imperfect Information Games:} An imperfect information game is one in which the entire sequence of previous actions and decisions is not fully observable for all players. Players may have private information, and each player typically has different information regarding the past. The players must then make decisions based on their own private information and whatever public information is available.
+  \end{itemize}
+
+\subsubsection{Nash Equilibrium}
+The concept of Nash equilibrium is central to game theory. It represents a state of the game where no player can gain any advantage by unilaterally changing their strategy, given that the strategies of all other players remain fixed.
+
+The best response function of player $i$, denoted by $\texttt{BR}i(\sigma{-i})$, is defined as the strategy that maximizes player $i$'s utility or payoff, $\pi_i$, given the strategies of all other players, $\sigma_{-i}$. Mathematically, this is represented as:
+\begin{equation}
+\texttt{BR}_i(\sigma_{-i}) = \arg\max_{\sigma_i \in \Sigma_i} \pi_i(\sigma_i,\sigma_{-i})
+\end{equation}
+A strategy profile $\sigma^*$ is said to be a Nash equilibrium if for all players $i$, the strategy $\sigma_i^*$ is the best response to the strategies of all other players, $\sigma_{-i}^*$. This means that no player can improve their utility by unilaterally deviating from their strategy in a Nash equilibrium.
+
+In game theory, achieving Nash equilibrium can be difficult in games with imperfect information, where players lack full knowledge about the game or the other players' actions and strategies.
+
+To address this, we often consider $\epsilon$-equilibrium, a more achievable concept in these scenarios. In an $\epsilon$-equilibrium, no player can gain more than a small value $\epsilon$ by changing their strategy alone, making it a practical approximation to Nash equilibrium in games with imperfect information.
+
+We define a strategy profile $\sigma^\epsilon_i$ to be an $\epsilon$-equilibrium if for all players i, we have:
+$$
+\pi_i(\sigma^\epsilon_i,\sigma^\epsilon_{-i}) \geq \pi_i(\sigma_i, \sigma^\epsilon_{-i}) - \epsilon
+$$
+This means that if a player deviates from his $\epsilon$-equilibrium strategy, his payoff can increase by at most $\epsilon$.
+\subsubsection{Bayesian Game}
+A Bayesian game is a game in which players have private information that affects their payoffs. Each player has a type, which represents their private information, and the type of each player is drawn from a known probability distribution. The type of a player determines the player's payoff function, which is a function of the player's type and the strategies chosen by all players.
+
+We define the type space of player $i$ as $\Theta_i$, which represents all possible types that player $i$ can have. The type distribution of player $i$ is denoted by $p_i$, which is a probability distribution over $\Theta_i$.
+
+We use a quintuple to define a Bayesian game:
+\begin{equation}
+\Gamma = \langle \mathcal{P}, \{\Theta_i\}_{i\in\mathcal{P}}, \{\Sigma_i\}_{i\in\mathcal{P}}, \{\pi_i\}_{i\in\mathcal{P}}, \{p_i\}_{i\in\mathcal{P}} \rangle
+\end{equation}
+Where $\Theta_i$ is the type space, $\pi_i$ is the payoff function of player $i$, and $p_i$ is the type distribution of player $i$.
+
+The Bayesian Nash Equilibrium (BNE) is a generalization of the Nash equilibrium concept to Bayesian games. A strategy profile $\sigma^*$ is a Bayesian Nash equilibrium if for all players $i$ and all types $\theta_i$ of player $i$, the strategy $\sigma_i^*(\theta_i)$ is a best response to the strategies of all other players, given the type $\theta_i$ of player $i$.
+
+We can define the best response function of player $i$ given type $\theta_i$ as:
+\begin{equation}
+\sigma^\texttt{BNE}_i=\texttt{BR}^\texttt{BNE}_i(\theta_{-i},\sigma_{-i}) = \arg\max_{\substack{\sigma_i \in \Sigma_i \\ \theta_i\in \Theta_i}} \int_{\Theta_i} \pi_i(\sigma_i,\sigma^\texttt{BNE}_{-i},\theta_i,\theta_{-i})dP_i(\theta_{-i}|\theta_i)
+\end{equation}
+where $P_i=\prod_{j\neq i}p_j(\theta_j)$.
+
+In this paper we only consider symmetric Bayesian games, where all players have the same type space and type distribution.
+
+\section{Monadring Protocol}
+\subsection{Network Architecture}
+\subsubsection{Hostnet and subnet.}
+Consider a network composed of a set of participants $\mathbb{V}$ in which the majority obey a protocol to reach Byzantine Agreement and finality\cite{grandpa} over ledger $\mathcal{L}$.
+$\mathcal{S}_{i}$ is a subset of $\mathbb{V}$, \( \mathbb{V} = \mathcal{S}_{0} \cup \mathcal{S}_{1} \cup .. \cup \mathcal{S}_{n-1}  \).
+We call $\mathbb{V}$ is a \texttt{hostnet} and $\mathcal{S}_{i}$ is a \texttt{subnet} of $\mathbb{V}$.
+\begin{itemize}
+\item A node participant \( v \in \mathbb{V} \) could be a member of any $\mathcal{S}_{i}$ at meantime.\( v \in \mathbb{V}, v \in \mathcal{S}_{m} \cap \mathcal{S}_{n} \) is valid.
 \item We assume the ledger $\mathcal{L}$ of hostnet maintains all the subnets information in form of a mapping \texttt{subnetid}\( \rightarrow \)\texttt{nodelist}.
 \item Any participant of the hostnet could join a specific subnet through proposing a modification over ledger $\mathcal{L}$.
 \item Since the ledger $\mathcal{L}$ is under Byzantine Agreement by all participants, the map can be considered a provable information outside any subnets.
 \end{itemize}
 
-\paragraph{Subnet ledger.}
-For each subnet $S_{i}$, all participants \(v_{j} \in S_{i}\) maintain an independent ledger $L_{i}$ different from the ledger $\mathcal{L}$ of hostnet, while the root state of each subnet ledger will be recorded in the hostnet ledger, \( L_{i} \nsubseteq \mathcal{L}, \mathcal{F}(L_{i}) \in \mathcal{L} \).
+\subsubsection{Subnet ledger.}
+For each subnet $\mathcal{S}_{i}$, all participants \(v_{j} \in \mathcal{S}_{i}\) maintain an independent ledger $\mathcal{L}_{i}$ different from the ledger $\mathcal{L}$ of hostnet, while the root state of each subnet ledger will be recorded in the hostnet ledger, \( \mathcal{L}_{i} \nsubseteq \mathcal{L}, \mathcal{F}(L_{i}) \in \mathcal{L} \).
 
 A subnet could handle query and update requests independently from the hostnet ledger.
 
@@ -176,21 +230,21 @@ We want to formalise the procedure of reaching consensus on the ledger across al
 
 \begin{itemize}
 \item The subnet ledger contains all the modification events and each event has an increasemental number as index.
-The ledger is expected to be in a deterministic state after the $n_{th}$ event being applied, \(S_{n+1} = f(S_{n}, e_{n})\).
+The ledger is expected to be in a deterministic state after the $n_{th}$ event being applied, \(\mathcal{S}_{n+1} = f(\mathcal{S}_{n}, e_{n})\).
 \item Particularly, changing the function $f$ is also a kind of event. The first event $e_{0}$ is loading the function.
-\item The time complexity of looking up the $n_{th}$ event is $O(1)$.
-\item The time complexity of retrieving the maximum event id is $O(1)$.
+\item The time complexity of looking up the $n_{th}$ event is $\mathcal{O}(1)$.
+\item The time complexity of retrieving the maximum event id is $\mathcal{O}(1)$.
 \end{itemize}
 
-\paragraph{Subnet topology and token.}
+\subsubsection{Subnet topology and token.}
 The participants of the subnet strictly follows the sequence of the \texttt{nodelist} to form a ring topology.
 A \texttt{token} $\mathcal{T}$ of a subnet with $n$ nodes is a special signal circulates around the ring following the sequence of the \texttt{nodelist}.
 
 \begin{itemize}
 \item The token carries groups of events from its sender and the sender{'}s forehead recursively.
-Group $G_{i}$ is composed by the node $v_{i}$. It contains a list of modification events originally from its pending request queue, the node{'}s digital signature, a digest of its local ledger after these modification applied, a number $q$ indicates how many times this group should delivered, the \texttt{nonce} of the signer and \texttt{ct} represents the voting data using FHE:
+Group $\mathcal{G}_{i}$ is composed by the node $v_{i}$. It contains a list of modification events originally from its pending request queue, the node{'}s digital signature, a digest of its local ledger after these modification applied, a number $q$ indicates how many times this group should delivered, the \texttt{nonce} of the signer and \texttt{ct} represents the voting data using FHE:
 \begin{equation}
-G_{i} = (\mathbf{E} = [e_{k}, e_{k+1}..e_{k+n}], S_{k+n}, \texttt{signature}, \texttt{nonce}, q, [\texttt{ct},..])
+\mathcal{G}_{i} = (\mathbf{E} = [e_{k}, e_{k+1}..e_{k+n}], \mathcal{S}_{k+n}, \texttt{signature}, \texttt{nonce}, q, [\texttt{ct},..])
 \end{equation}
 Where the $\mathbf{E}$ could be empty, the $q$ could be negative, the \(\texttt{signature} = \texttt{sig}(\texttt{nonce}, \mathbf{E}, S_{k+n}, \texttt{nodekey})\).
 
@@ -203,13 +257,14 @@ The $q$ of executed groups should be decreased by 1.
 Then try to deliver the token to its successor.
 \end{itemize}
 
-Assume a subnet with $n$ nodes \( v_{0}, v_{1} .. v_{n-1}, n\geq 3\). If no nodes joined the subnet during last round, when a node $v_{i}$ receives the token $\mathcal{T}$, noted as $T_{i}$.
+Assume a subnet with $n$ nodes \( v_{0}, v_{1} .. v_{n-1}, n\geq 3\). If no nodes joined the subnet during last round, when a node $v_{i}$ receives the token $\mathcal{T}$, noted as $\mathcal{T}_{i}$.
 \begin{eqnarray}
-T_{i} &=& G_{i}, G_{(i + 1)\mod n},.., G_{(i + n - 1)\mod n}\\
-T_{i+1} &=& G_{i+1}, G_{(i+2)\mod n},..,G_{i}^{\prime}; i+1<n
+\mathcal{T}_{i} &=& \mathcal{G}_{i}, \mathcal{G}_{(i + 1)\mod n},.., \mathcal{G}_{(i + n - 1)\mod n}\\
+\mathcal{T}_{i+1} &=& \mathcal{G}_{i+1}, \mathcal{G}_{(i+2)\mod n},.., \mathcal{G}_{i}^{\prime}; i+1<n
 \end{eqnarray}
 
-\paragraph{Launching a subnet and rotating subnet members.}
+\subsection{Procedures}
+\subsubsection{Launching a subnet and rotating subnet members.}
 To launch a subnet, a publishing procedure similar to publishing a smart contract is required.
 It requires a deterministic function $f$ in form of executable binary code.
 
@@ -219,27 +274,28 @@ The token $\mathcal{T}$ initializes following the order of member registering.
 And the \texttt{FHEKeyGen} procedure mentioned in the previous section will be executed.
 
 After surpassing the threshold for registered nodes, subnet nodes need to undergo periodic rotation to ensure randomness and reduce the potential for collusion.
-This rotation process can specifically utilize verifiable random function (VRF) to select nodes for rotation in and out of the subnet.
+This rotation process can specifically utilize verifiable random function (VRF) or simple pseudo random function using a deterministic seed to select nodes for rotation in and out of the subnet. E.g. The block hash of the end of each epochs.
 
-\paragraph{Function upgrade.}
-Function upgrade is a kind of event which should be included in the token $G$ either.
+\subsubsection{Function upgrade.}
+Function upgrade is a kind of event which should be included in the token $\mathcal{G}$ either.
 Only some specific users could initiate this event, wherein the subnet manager submit a transaction to modify the hostnet ledger $\mathcal{L}$ similar to registering a subnet.
 
 Besides the function itself, a digest and version should be included in this transaction. E.g. An executable WASM binary with digest and version.
 Thus, once a upgrading transaction is confirmed by hostnet, any members of the subnet could include this event into token $\mathcal{T}$ if the hostnet ledger contains a higher version function but an associated event is absent in the token.
 
-\paragraph{Fault tolerence.}
+\subsubsection{Fault tolerence.}
 The hostnet can reach the Byzantine Agreement over $\mathcal{L}$ based on an assumption that the ratio of honest participants $r > \texttt{threshold}$.
-We don{'}t expect that a subnet has a same ratio. We neither don{'}t expect that a node is honest on ledger $\mathcal{L}$ would be honest on subnet legder $L_{i}$.
+We don{'}t expect that a subnet has a same ratio as the honest participants of hostnet, neither we don{'}t expect that a node is honest on ledger $\mathcal{L}$ would be honest on subnet legder $\mathcal{L}_{i}$.
+
 We want to find a solution to detect the malicious behaviours or nodes offline then exclude them from the subnet by a provable invalidity.
 
-For simplicity, we note $T_{i/i}$ as $T_{i}$ excluding the $i_{th}$ group. An valid $T_{i}$ must satisfy properties as below:
+For simplicity, we note $\mathcal{T}_{-i}$ as $\mathcal{T}_{i}$ excluding the $i_{th}$ group. An valid $\mathcal{T}_{i}$ must satisfy properties as below:
 
 \begin{itemize}
-\item The $q$ of $G_{i}$ satisfies \(q \leq 0\). $q=0$ implies no new nodes joined the subnet in this round, while $q < 0$ implies some new nodes have joined the subnet. The node $v_{i}$ can check the \texttt{nodelist} from $L$.
-For rest $q$ of $\forall G \in T_{i/i}$ are similar.
-\item Group $G_{i} \in \mathcal{T}$ contains a signature using its \texttt{nodekey}.
-\item Assume the maximum event id of $G_{i}$ is $m$. Combine all event lists of $T_{i/i}$ as a single list $E_{i/i}$. Assume the minimal event id of $E_{i/i}$ is $n$.
+\item The $q$ of $\mathcal{G}_{i}$ satisfies \(q \leq 0\). $q=0$ implies no new nodes joined the subnet in this round, while $q < 0$ implies some new nodes have joined the subnet. The node $v_{i}$ can check the \texttt{nodelist} from $\mathcal{L}$.
+For rest $q$ of $\forall \mathcal{G} \in \mathcal{T}_{-i}$ are similar.
+\item Group $\mathcal{G}_{i} \in \mathcal{T}$ contains a signature using its \texttt{nodekey}.
+\item Assume the maximum event id of $\mathcal{G}_{i}$ is $m$. Combine all event lists of $\mathcal{T}_{-i}$ as a single list $\mathbf{E}_{-i}$. Assume the minimal event id of $\mathbf{E}_{-i}$ is $n$.
 \(n = m+1\) and $m$ is the maximum event id of node $v_{i}$.
 \end{itemize}
 
@@ -252,11 +308,5 @@ The difference between this procedure and other BFT consensus algorithm is that 
 Thus, the subnet could efficiently adapt to small-scale networks and avoid collusion actions.
 
 % TODO: proof
-
-\section{The Monadring Protocol}
-
-\subsection{Substrate gadget}
-% TODO
-
 \bibliography{monadring}
 \end{document}
