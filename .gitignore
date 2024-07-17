@@ -5,3 +5,4 @@
 *.blg
 *.dvi
 .DS_Store
+.auctex-auto/
