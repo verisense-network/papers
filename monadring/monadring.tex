@@ -128,6 +128,17 @@ It is worth noting that all polynomials are defined over the ring of polynomials
 This way, the private key (secret) is never explicitly revealed to any single party and no single party can access the secret alone.
 This is particularly useful in managing the risks associated with key management in cryptographic systems.
 It provides a balance between accessibility (through the threshold number of participants) and security (no single point of failure).
+\subsubsection{Resharing Scheme}
+In our scheme, we can construct a ($n$,$t$) key sharing scheme based on the aforementioned algorithm. However, in practical applications, we may need to redistribute the keys. This redistribution, or resharing, refers to the transformation of the original ($n$,$t$) key into a ($n'$,$t'$) key, which can be achieved using the Lagrange interpolation formula.
+Let's assume that the key sharing based on ($n$,$t$) is $s$, where $s=\mathcal{P}(0)$. We use $\mathcal{L}^\mathcal{N}_i$ as the Lagrange base of the original ($n$,$t$) key sharing user $\mathcal{N}$. The new ($n'$,$t'$) sharing has a user set of $\mathcal{M}$. Then, we have:
+\begin{equation}
+\begin{aligned}
+\mathcal{P}(0)&=\sum_{i\in\mathcal{N}}\mathcal{L}^\mathcal{N}_is_i=\sum_{i\in\mathcal{N}}\mathcal{L}^\mathcal{N}_i\sum_{j\in\mathcal{M}}\mathcal{L}^\mathcal{M}_js'_{i,j}\\
+&=\sum_{j\in\mathcal{M}}\left(\sum_{i\in\mathcal{N}}\mathcal{L}^\mathcal{N}_i\mathcal{L}^\mathcal{M}_j\right)s'_{i,j}
+=\sum_{j\in\mathcal{M}}\mathcal{L}^\mathcal{M}_j\sum_{i\in\mathcal{N}}\mathcal{L}^\mathcal{N}_is'_{i,j}=\sum_{j\in\mathcal{M}}\mathcal{L}^\mathcal{M}_js'_j
+\end{aligned}
+\end{equation}
+Mathematically, this is akin to transforming a one-dimensional vector into a two-dimensional matrix. The size of the matrix is $n \times n'$, where any $t \times t'$ submatrix can restore the original key. Thus, the resharing process is equivalent to the transition from users holding row vectors to users holding column vectors. This reshaping provides a flexible way to adjust the distribution of shares without revealing the original secret or requiring all participants to return their shares.
 
 \subsubsection{BFV Scheme.}
 As described in the citation \cite{10.1007/978-3-642-32009-5_50, cryptoeprint:2012/144}, the BFV scheme proposes the method of placing the ciphertext in the Most Significant Digit (MSD) position, which makes the trend of noise growth change from quadratic to linear. This not only greatly reduces the influence of noise in the computation process, but also eliminates the need for modulus switching, thus effectively enhancing the computational efficiency.
@@ -287,6 +298,97 @@ This rotation process can specifically utilize verifiable random function (VRF) 
 
 
 \subsubsection{Token recovery}
+
+\subsection{Imperfect Information Game}
+Assume there are $n$ voters, each with a voting weight of $\omega_i$, casting a vote $v\in{\{\top,\bot\}}$. The consensus threshold percentage is $\theta$, and their payoff function is:
+
+\begin{equation}
+b(\omega_i; \theta_\top,\theta_\bot, n) = 
+\begin{cases}
+\beta(\omega_i), & \text{if } \frac{\#(v = v_i)}{n} > \theta_{v_i} \\
+-\alpha(\omega_i), & \text{if } \frac{\#(v \neq v_i)}{n} > \theta_{\bar{v}_i} \\
+0, & \text{otherwise}
+\end{cases}
+\end{equation}
+where $n$ and $\theta$ refer to the number of participants and threshold percentage in this subgame, with $\theta_\top+\theta_\bot\geq 1$. We use $N$ and $\theta_g$ to denote the global threshold and number of participants. The $\beta(\omega_i)\geq 0$ and $\alpha(\omega_i)\geq 0$ are the payoff functions for a voter with a weight of $\omega_i$.
+
+We introduce a deterministic information: when voter $i$ votes, they know that there have already been $n^{(i)}\top$ votes for $\top$ and $n^{(i)}\bot$ votes for $\bot$. The threshold required for them in the subgame is:
+\begin{equation}
+  \theta^{(i)}_\top = 
+  \begin{cases}
+    0, & \text{if } n^{(i)}_\top \geq \theta_\top\cdot n \\
+    \infty, & \text{if } n^{(i)}_\bot \geq \theta_\bot\cdot n \\
+    \frac{\theta_\top\cdot n - n^{(i)}_\top}{n - n^{(i)}}, & \text{otherwise}
+  \end{cases}
+\end{equation}
+Therefore, at any point in time, each voter is essentially facing a subgame with parameters $\theta^i\top$, $\theta^i_\bot$, and $n^{(i)}$. In this game, the voter is completely unaware of the voting situation of the remaining $n-n^{(i)}-1$ individuals.
+\subsubsection{Perfect Information:$n^{(i)}=i-1$}
+Let's consider a special case where $n^{(i)}=i-1$, meaning that voter $i$ knows the voting behavior of all previous voters. Assuming all voters are rational, when the last voter votes, they know the voting behavior of all previous voters, and they only need to choose a vote that will satisfy the voting result.
+\begin{equation}
+  \label{eq:rational_n}
+  v^*_n = 
+  \begin{cases}
+    \top, &\text{if }n^n_\top+1>\theta_\top\cdot n\\
+    \bot, &\text{if }n^n_\bot+1>\theta_\bot\cdot n\\
+    \texttt{r}^{(n)}(\top,\bot) &\sim \mathcal{B}^{(n)}, \text{otherwise}
+  \end{cases}
+\end{equation}
+Here, $v^*$ represents the rational voting result (not the actual vote), where $\mathcal{B}$ is the Bernoulli distribution.
+For the $n-1$ voters, if we assume they are rational, they would know the results of $n-2$ votes and $v^*_n$. Then, they can vote similarly to Eqn.~\ref{eq:rational_n} based on these $n-1$ results. Therefore, for any $i$, it can be inferred based on $\{v_1,v_2, \ldots,v_{i-1}\} \cup \{v^*_{i+1},v^*_{i+2},\ldots,v^*_n\}$.
+\begin{equation}
+  \label{eq:rational_i}
+  v^*_i = 
+  \begin{cases}
+    \top, &\text{if }n^{(i)}_\top+1+\sum_{j>i}{E[v^*_j=\top]}>\theta_\top\cdot n\\
+    \bot, &\text{if }n^{(i)}_\bot+1+\sum_{j>i}{E[v^*_j=\bot]}>\theta_\bot\cdot n\\
+    \texttt{r}^{(i)}(\top,\bot) &\sim \mathcal{B}^{(i)}(v;\theta_\top\cdot n-n^{(i)}_\top,\theta_\bot\cdot n-n^{(i)}_\bot,n-n^{(i)}), \text{otherwise}
+  \end{cases}
+\end{equation}
+If we assume that all other information for all voters is ideal, meaning there is no additional information that makes them more inclined to $\top$ or $\bot$, then $v^*$ is no longer a random variable, but:
+\begin{equation}
+  \label{eq:rational_determined}
+  \texttt{r}^{(i)} = 
+  \begin{cases}
+    \top, &\text{if }\theta_\top\cdot n-n^{(i)}_\top<\theta_\top\cdot n-n^{(i)}_\bot\\
+    \bot, &\text{otherwise}
+  \end{cases}
+\end{equation}
+However, the real situation is not like the ideal one, especially for the voters who are closer to the front ($i<\texttt{min}((1-\theta_\top)\cdot n+n_\top^{(i)},(1-\theta_\bot)\cdot n+n_\bot^{(i)})$). According to the Central Limit Theorem, the variance will be higher because they have to estimate the $\texttt{r}$ of other voters.
+\subsubsection{Imperfect Information: $n^{(i)}=0$}
+For the case of $n^{(i)}=0$, where voter $i$ is the first voter and does not know the voting behavior of other voters, their voting result should be a random variable. This situation degenerates into a Bayesian game.
+Assume that its distribution is $v^*\sim B(X;\xi)$, where $B$ is the binomial distribution. For voter $i$, the expected payoff is:
+\begin{equation}
+  \label{eq:expectation}
+  \begin{aligned}
+    \mathbb{E}[b(\omega_i;\theta_\top,\theta_\bot,n)] &= \beta\cdot\sum_{i>\theta_\top\cdot n}{\binom{n}{i}\xi^i(1-\xi)^{n-i}} - \alpha\cdot\sum_{i>\theta_\bot\cdot n}{\binom{n}{n-i}\xi^{(n-i)}(1-\xi)^{i}}
+  \end{aligned}
+\end{equation}
+To find its Nash equilibrium, we take the logarithm of both sides of the equation and find the extreme value of $\xi$ by partial differentiation:
+\begin{equation}
+  \label{eq:partial}
+  \begin{aligned}
+    \frac{\partial\mathbb{E}[b(\omega_i;\theta_\top,\theta_\bot,n)]}{\partial\xi} &= \frac{\beta\cdot n\cdot(\xi-\theta_\top)}{\xi\cdot(1-\xi)} - \frac{\alpha\cdot n\cdot(\xi-\theta_\bot)}{\xi\cdot(1-\xi)} = 0\\
+    \xi &= \frac{\beta\cdot\theta_\top-\alpha\cdot\theta_\bot}{\beta-\alpha}
+  \end{aligned}
+\end{equation}
+When $\alpha=\beta$, the Nash equilibrium degenerates to $\xi=0$ or $\xi=1$.
+
+\subsubsection{Evaluation of $\theta$}
+We do not consider local optimal values for theta, but rather minimize global penalties (in order to prevent voters from colluding as much as possible).
+\begin{equation}
+  \label{eq:expectation}
+  \begin{aligned}
+    \mathbb{E}[b(\omega_i;\theta_\top,\theta_\bot,n)\cdot X] &= \beta\cdot\sum_{i>\theta_\top\cdot n}{i\cdot\binom{n}{i}\xi^i(1-\xi)^{n-i}} - \alpha\cdot\sum_{i>\theta_\bot\cdot n}{i\cdot\binom{n}{n-i}\xi^{(n-i)}(1-\xi)^{i}}
+  \end{aligned}
+\end{equation}
+For $\theta_\top$, by taking the partial derivative, we can obtain:
+\begin{equation}
+  \label{eq:partial}
+  \begin{aligned}
+    \frac{\partial\mathbb{E}[b(\omega_i;\theta_\top,\theta_\bot,n)\cdot X]}{\partial\theta_\top} &= \beta\cdot\sum_{i>\theta_\top\cdot n}{\binom{n}{i}\xi^i(1-\xi)^{n-i}} - \alpha\cdot\sum_{i>\theta_\bot\cdot n}{\binom{n}{n-i}\xi^{(n-i)}(1-\xi)^{i}} = 0\\
+    \theta_\top &= \frac{\beta\cdot\sum_{i>\theta_\top\cdot n}{\binom{n}{i}\xi^i(1-\xi)^{n-i}}}{\alpha\cdot\sum_{i>\theta_\bot\cdot n}{\binom{n}{n-i}\xi^{(n-i)}(1-\xi)^{i}}}
+  \end{aligned}
+\end{equation}
 
 
 \subsubsection{Function upgrade}
