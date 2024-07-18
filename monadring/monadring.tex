@@ -209,24 +209,26 @@ where $P_i=\prod_{j\neq i}p_j(\theta_j)$.
 In this paper we only consider symmetric Bayesian games, where all players have the same type space and type distribution.
 
 \section{Monadring Protocol}
+We want to formalize the procedure of organizing some partial nodes of an existing blockchain network to form a smaller.
+I.e. Implementing this protocol as a plugin of some specific blockchain node programs.
 \subsection{Network Architecture}
-\subsubsection{Hostnet and subnet.}
+\subsubsection{Model and definitions}
+\paragraph{Hostnet and subnet.}
 Consider a network composed of a set of participants $\mathbb{V}$ in which the majority obey a protocol to reach Byzantine Agreement and finality\cite{grandpa} over ledger $\mathcal{L}$.
-$\mathcal{S}_{i}$ is a subset of $\mathbb{V}$, \( \mathbb{V} = \mathcal{S}_{0} \cup \mathcal{S}_{1} \cup .. \cup \mathcal{S}_{n-1}  \).
-We call $\mathbb{V}$ is a \texttt{hostnet} and $\mathcal{S}_{i}$ is a \texttt{subnet} of $\mathbb{V}$.
+$\mathcal{S}_{i}$ is a subset of $\mathcal{V}$, \( \mathcal{V} = \mathcal{S}_{0} \cup \mathcal{S}_{1} \cup .. \cup \mathcal{S}_{n-1}  \).
+We call $\mathcal{V}$ is a \texttt{hostnet} and $\mathcal{S}_{i}$ is a \texttt{subnet} of $\mathcal{V}$.
 \begin{itemize}
-\item A node participant \( v \in \mathbb{V} \) could be a member of any $\mathcal{S}_{i}$ at meantime.\( v \in \mathbb{V}, v \in \mathcal{S}_{m} \cap \mathcal{S}_{n} \) is valid.
+\item A node participant \( v \in \mathcal{V} \) could be a member of any $\mathcal{S}_{i}$ at meantime.\( v \in \mathcal{V}, v \in \mathcal{S}_{m} \cap \mathcal{S}_{n} \) is valid.
 \item We assume the ledger $\mathcal{L}$ of hostnet maintains all the subnets information in form of a mapping \texttt{subnetid}\( \rightarrow \)\texttt{nodelist}.
 \item Any participant of the hostnet could join a specific subnet through proposing a modification over ledger $\mathcal{L}$.
 \item Since the ledger $\mathcal{L}$ is under Byzantine Agreement by all participants, the map can be considered a provable information outside any subnets.
 \end{itemize}
 
-\subsubsection{Subnet ledger.}
+\paragraph{Subnet ledger.}
 For each subnet $\mathcal{S}_{i}$, all participants \(v_{j} \in \mathcal{S}_{i}\) maintain an independent ledger $\mathcal{L}_{i}$ different from the ledger $\mathcal{L}$ of hostnet, while the root state of each subnet ledger will be recorded in the hostnet ledger, \( \mathcal{L}_{i} \nsubseteq \mathcal{L}, \mathcal{F}(L_{i}) \in \mathcal{L} \).
 
 A subnet could handle query and update requests independently from the hostnet ledger.
-
-We want to formalise the procedure of reaching consensus on the ledger across all participants as a protocol that can be deployed along with any kind of blockchain network to build subnet. We can assume that the subnet ledger has properties as below:
+We can assume that the subnet ledger has properties as below:
 
 \begin{itemize}
 \item The subnet ledger contains all the modification events and each event has an increasemental number as index.
@@ -236,13 +238,16 @@ The ledger is expected to be in a deterministic state after the $n_{th}$ event b
 \item The time complexity of retrieving the maximum event id is $\mathcal{O}(1)$.
 \end{itemize}
 
-\subsubsection{Subnet topology and token.}
+\paragraph{Token.} A \texttt{token} $\mathcal{T}$ of Monadring is a special signal circulates within a subnet.
+A node in a subnet can write the subnet ledger only when it holds the token $\mathcal{T}$. The token is similar to a write lock in distributed networks.
+
+\subsubsection{Subnet topology}
 The participants of the subnet strictly follows the sequence of the \texttt{nodelist} to form a ring topology.
-A \texttt{token} $\mathcal{T}$ of a subnet with $n$ nodes is a special signal circulates around the ring following the sequence of the \texttt{nodelist}.
+The \texttt{token} $\mathcal{T}$ of a subnet with $n$ nodes circulates around the subnet following the sequence of the \texttt{nodelist}.
 
 \begin{itemize}
-\item The token carries groups of events from its sender and the sender{'}s forehead recursively.
-Group $\mathcal{G}_{i}$ is composed by the node $v_{i}$. It contains a list of modification events originally from its pending request queue, the node{'}s digital signature, a digest of its local ledger after these modification applied, a number $q$ indicates how many times this group should delivered, the \texttt{nonce} of the signer and \texttt{ct} represents the voting data using FHE:
+\item The \texttt{token} $\mathcal{T}$ of a subnet carries groups of events noted as $\mathbf{G}$ from its sender and the sender{'}s forehead recursively.
+\item Group $\mathcal{G}_{i}$ is composed by the node $v_{i}$. It contains a list of modification events originally from its pending request queue, the node{'}s digital signature, a digest of its local ledger after these modification applied, a number $q$ indicates how many times this group should delivered, the \texttt{nonce} of the signer and \texttt{ct} represents the voting data using FHE:
 \begin{equation}
 \mathcal{G}_{i} = (\mathbf{E} = [e_{k}, e_{k+1}..e_{k+n}], \mathcal{S}_{k+n}, \texttt{signature}, \texttt{nonce}, q, [\texttt{ct},..])
 \end{equation}
@@ -258,13 +263,13 @@ Then try to deliver the token to its successor.
 \end{itemize}
 
 Assume a subnet with $n$ nodes \( v_{0}, v_{1} .. v_{n-1}, n\geq 3\). If no nodes joined the subnet during last round, when a node $v_{i}$ receives the token $\mathcal{T}$, noted as $\mathcal{T}_{i}$.
-\begin{eqnarray}
+\begin{eqnarray*}
 \mathcal{T}_{i} &=& \mathcal{G}_{i}, \mathcal{G}_{(i + 1)\mod n},.., \mathcal{G}_{(i + n - 1)\mod n}\\
 \mathcal{T}_{i+1} &=& \mathcal{G}_{i+1}, \mathcal{G}_{(i+2)\mod n},.., \mathcal{G}_{i}^{\prime}; i+1<n
-\end{eqnarray}
+\end{eqnarray*}
 
 \subsection{Procedures}
-\subsubsection{Launching a subnet and rotating subnet members.}
+\subsubsection{Launching a subnet and rotating subnet members}
 To launch a subnet, a publishing procedure similar to publishing a smart contract is required.
 It requires a deterministic function $f$ in form of executable binary code.
 
@@ -276,16 +281,24 @@ And the \texttt{FHEKeyGen} procedure mentioned in the previous section will be e
 After surpassing the threshold for registered nodes, subnet nodes need to undergo periodic rotation to ensure randomness and reduce the potential for collusion.
 This rotation process can specifically utilize verifiable random function (VRF) or simple pseudo random function using a deterministic seed to select nodes for rotation in and out of the subnet. E.g. The block hash of the end of each epochs.
 
-\subsubsection{Function upgrade.}
+% TODO extend the init
+
+\subsubsection{Node offline}
+
+
+\subsubsection{Token recovery}
+
+
+\subsubsection{Function upgrade}
 Function upgrade is a kind of event which should be included in the token $\mathcal{G}$ either.
-Only some specific users could initiate this event, wherein the subnet manager submit a transaction to modify the hostnet ledger $\mathcal{L}$ similar to registering a subnet.
+Only some specific users could initiate this event, wherein the subnet manager submits a transaction to modify the hostnet ledger $\mathcal{L}$ similar to registering a subnet.
 
 Besides the function itself, a digest and version should be included in this transaction. E.g. An executable WASM binary with digest and version.
 Thus, once a upgrading transaction is confirmed by hostnet, any members of the subnet could include this event into token $\mathcal{T}$ if the hostnet ledger contains a higher version function but an associated event is absent in the token.
 
-\subsubsection{Fault tolerence.}
+\subsection{Fault Tolerance with FHE}
 The hostnet can reach the Byzantine Agreement over $\mathcal{L}$ based on an assumption that the ratio of honest participants $r > \texttt{threshold}$.
-We don{'}t expect that a subnet has a same ratio as the honest participants of hostnet, neither we don{'}t expect that a node is honest on ledger $\mathcal{L}$ would be honest on subnet legder $\mathcal{L}_{i}$.
+We don{'}t expect that a subnet has a same ratio as the honest participants of hostnet, neither we expect that a node was honest on ledger $\mathcal{L}$ would be honest on subnet legder $\mathcal{L}_{i}$.
 
 We want to find a solution to detect the malicious behaviours or nodes offline then exclude them from the subnet by a provable invalidity.
 
@@ -300,7 +313,7 @@ For rest $q$ of $\forall \mathcal{G} \in \mathcal{T}_{-i}$ are similar.
 \end{itemize}
 
 Given a token $\mathcal{T}$, any nodes can simply validate it.
-If there is a malicious behavior noted as \( \mathcal{G}_{i} = (.., \mathbf{E} = [e_{i}, e_{i+1}, ..], ..) \), the nearest honest successor could place its event group with the highest common agreed \texttt{eventid}.
+If there is a malicious behavior noted as \( \mathcal{G}_{i} = (.., \mathbf{E} = [e_{i}, e_{i+1}, ..], ..) \), the nearest honest successor could place its event group with the smallest common agreed \texttt{eventid}.
 i.e. There are two conflicted groups $G_{i}^{\prime}$ and $\mathcal{G}_{i}$ in a token $\mathcal{T}$. The invalid one contains the node's signature could be used for slashing.
 
 
