@@ -462,6 +462,22 @@ Then the condition for Bayesian Nash Equilibrium is:
 \end{equation}
 Bringing in Eqn.~\ref{eq:expectation_top_to_top}, Eqn.~\ref{eq:expectation_top_to_bot}, Eqn.~\ref{eq:expectation_bot_to_bot}, Eqn.~\ref{eq:expectation_bot_to_top}. Get the analytic solution of $\theta_\top$ and $\theta_\bot$. But generally this analytical solution is not easy to solve, we can solve it by numerical methods.
 
+\subsubsection{Regularization Term}
+To implement a reasonable voting mechanism, we need to introduce a regularization term. The purpose of this term is to prevent voters from voting too extremely, that is, their voting behavior is overly concentrated on $\top$ or $\bot$. By introducing a regularization term, we can encourage a more balanced voting behavior among voters. We can define the regularization term as follows:
+\begin{equation}
+  \label{eq:regularization}
+  \begin{aligned}
+    \mathcal{F}(\xi, \theta,n,\alpha,\beta)=\mathbb{E}[b(\omega_i;\theta_\top,\theta_\bot,n)] + \underbrace{\lambda\cdot\left\|\frac{\partial{\mathbb{E}}}{\partial{\theta_\top}}+\frac{\partial{\mathbb{E}}}{\partial{\theta_\bot}}\right\|^2}_{\text{Regularization}}\\+\underbrace{\lambda_1\rho(B(X\leq\theta_\top;\xi))+\lambda_2\rho(B(X\leq\theta_\bot;\xi))}_{\text{Invalid Voting Mechanism Penalty}}\\
+  \end{aligned}
+\end{equation}
+Where $\rho(\cdot)$ is a step function, similar to activation. When there is a high probability that the vote can be passed, the value is 0; otherwise, the value is 1. $\lambda$ is the regularization coefficient. We can find the optimal $\theta$, $\alpha$, and $\beta$ by minimizing $\mathcal{F}(\theta,n,\gamma,\beta)$.
+Use Eqn.\ref{eq:partial_theta} and Eqn.\ref{eq:partial} to find the optimal $\theta$ and $\xi$.
+
+
+Then the optimal $\theta$ and $\xi$ can be obtained by computing the minimum (for $\theta$) or the maximum (for $\xi$) of $\mathcal{F}$. Here we can use gradient descent method to solve it. We can solve $\theta$ and $\xi$ by iteration. In each iteration, we can update $\theta$ and $\xi$ by calculating $\frac{\partial{\mathcal{F}}}{\partial{\theta}}$ and $\frac{\partial{\mathcal{F}}}{\partial{\xi}}$. During the iteration process, we can determine whether there is convergence by calculating the value of $\mathcal{F}$. When the value of $\mathcal{F}$ converges, we can get the optimal $\theta$ and $\xi$.
+
+
+
 \subsubsection{Semi-Perfect Information: $0<n^{(i)}<i-1$}
 It is worth noting that in general, $\theta_\top$ and $\theta_\bot$ are the same. However, in the typical voting process, especially regarding blockchain consensus schemes, the situation often lies between a perfect information game and an imperfect information game. We refer to this as a semi-perfect game. For instance, in a consensus network, some nodes have already seen part of the voting results before voting, while they haven't seen the rest. After excluding the results they have seen, a voting subgame forms, which is an imperfect information game. And there is a high probability that $\theta_\top \neq \theta_\bot$. In this case, we can refer to the method described in Sec.~\ref{sec:imperfect_information} to characterize this subgame problem.
 \subsubsection{Function upgrade}
