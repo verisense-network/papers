@@ -426,7 +426,7 @@ Solve Eqn.~\ref{eq:partial} to find the Nash equilibrium $\xi=\frac{\theta_\bot}
 With any parameters, $\xi=0$ and $\xi=1$ are the trivial Nash Equilibrium points. When $\alpha=\beta$,$\theta_\top=\theta_\bot$, the Nash equilibrium degenerates to $\xi=0.5$.
 
 \subsubsection{Evaluation of $\theta$}
-For the designers of voting mechanisms, their goal is to achieve network-wide consensus at the minimum cost. That is, we should design $\theta, \beta, \alpha$ in such a way that consensus can be effectively reached at the lowest cost (note that these three are not necessarily constants, they could very well be in the form of functions such as $\beta(\theta)$ and $\alpha(\theta)$). Here we only discuss the design of $\theta$, while $\beta$ and $\alpha$ need to be evaluated based on functional analysis, which we will publish in the form of a paper.We derivate the expectation of the payoff function with respect to $\theta_\top$ and $\theta_\bot$. According to Eqn.~\ref{eq:expectation_top}, We approximately estimate that the likelihood expectation of the derivative of $\theta_\top\cdot n$ at the point $\theta_\top\cdot n -1$ is a Beta distribution. We use $\mathbb{E}_\top$ to abbreviate $\mathbb{E}[b(\omega_i;\theta_\top,\theta_\bot,n)|v_i=\top]$
+For the designers of voting mechanisms, their goal is to achieve network-wide consensus at the minimum cost. That is, we should design $\theta, \beta, \alpha$ in such a way that consensus can be effectively reached at the lowest cost (note that these three are not necessarily constants, they could very well be in the form of functions such as $\beta(\theta)$ and $\alpha(\theta)$). Here we only discuss the design of $\theta$, while $\beta$ and $\alpha$ need to be evaluated based on functional analysis, which we will publish in the form of a paper. We derivate the expectation of the payoff function with respect to $\theta_\top$ and $\theta_\bot$. According to Eqn.~\ref{eq:expectation_top}, We approximately estimate that the likelihood expectation of the derivative of $\theta_\top\cdot n$ at the point $\theta_\top\cdot n -1$ is a Beta distribution. We use $\mathbb{E}_\top$ to abbreviate $\mathbb{E}[b(\omega_i;\theta_\top,\theta_\bot,n)|v_i=\top]$
 \begin{equation}
   \label{eq:expectation_top_to_top}
   \begin{aligned}
@@ -451,6 +451,7 @@ For the designers of voting mechanisms, their goal is to achieve network-wide co
   \frac{\partial{\mathbb{E}}_\bot}{\partial{\theta_\top}}= -\alpha\cdot n \cdot  \text{f}_b(1-\xi;\theta_\top\cdot n+1,n-n\cdot\theta_\top+1)\cdot(n+1)\\
   \end{aligned}
 \end{equation}
+where $$f_b(x;a,b)=\frac{\Gamma(a+b)}{\Gamma(a)\Gamma(b)}x^{a-1}(1-x)^{b-1}$$ and $\Gamma(\cdot)$ is the gamma function.
 Then the condition for Bayesian Nash Equilibrium is:
 \begin{equation}
   \label{eq:partial_theta}
