@@ -11,6 +11,10 @@
 \usepackage{capt-of}
 \usepackage{hyperref}
 \usepackage{authblk}
+\usepackage{algorithm}
+\usepackage{setspace}
+\usepackage{upgreek}
+\usepackage{algpseudocode}% http://ctan.org/pkg/algorithmicx
 
 \usepackage{draftwatermark}
 \SetWatermarkText{\shortstack
@@ -299,7 +303,9 @@ This rotation process can specifically utilize verifiable random function (VRF) 
 
 \subsubsection{Token recovery}
 
-\subsection{Imperfect Information Game}
+\subsection{Game Theory Analysis for Monadring}
+In this chapter, we discuss how to use game theory in Monadring to design voting mechanisms to ensure the normal operation of the subnet. Here, we analyze the mathematical principles of different voting mechanisms. The significance lies in the fact that each AVS needs to design different voting mechanisms for different subnets. For voters, they hope to maximize their voting benefits. For the subnet, it hopes to distribute as few rewards as possible while ensuring that the entire network consensus is reached as soon as possible. We first introduced some basic game theory concepts, then applied these concepts to the subnets in Monadring. For the case of perfect information games, we provided a theoretically optimal voting strategy. For the case of imperfect information games, voters will try to find the right strategy, that is, $\xi$, to maximize their expected payoffs when reaching the Nash equilibrium. However, AVS designers hope to find the corresponding $\theta$ to minimize the overall payoff.
+\subsubsection{Voting Game}
 Assume there are $n$ voters, each with a voting weight of $\omega_i$, casting a vote $v\in{\{\top,\bot\}}$. The consensus threshold percentage is $\theta$, and their payoff function is:
 
 \begin{equation}
@@ -323,6 +329,7 @@ We introduce a deterministic information: when voter $i$ votes, they know that t
 \end{equation}
 Therefore, at any point in time, each voter is essentially facing a subgame with parameters $\theta^i\top$, $\theta^i_\bot$, and $n^{(i)}$. In this game, the voter is completely unaware of the voting situation of the remaining $n-n^{(i)}-1$ individuals.
 \subsubsection{Perfect Information:$n^{(i)}=i-1$}
+\label{sec:perfect_information}
 Let's consider a special case where $n^{(i)}=i-1$, meaning that voter $i$ knows the voting behavior of all previous voters. Assuming all voters are rational, when the last voter votes, they know the voting behavior of all previous voters, and they only need to choose a vote that will satisfy the voting result.
 \begin{equation}
   \label{eq:rational_n}
@@ -355,42 +362,107 @@ If we assume that all other information for all voters is ideal, meaning there i
 \end{equation}
 However, the real situation is not like the ideal one, especially for the voters who are closer to the front ($i<\texttt{min}((1-\theta_\top)\cdot n+n_\top^{(i)},(1-\theta_\bot)\cdot n+n_\bot^{(i)})$). According to the Central Limit Theorem, the variance will be higher because they have to estimate the $\texttt{r}$ of other voters.
 \subsubsection{Imperfect Information: $n^{(i)}=0$}
+\label{sec:imperfect_information}
 For the case of $n^{(i)}=0$, where voter $i$ is the first voter and does not know the voting behavior of other voters, their voting result should be a random variable. This situation degenerates into a Bayesian game.
 Assume that its distribution is $v^*\sim B(X;\xi)$, where $B$ is the binomial distribution. For voter $i$, the expected payoff is:
 \begin{equation}
-  \label{eq:expectation}
+  \label{eq:expectation_top}
   \begin{aligned}
-    \mathbb{E}[b(\omega_i;\theta_\top,\theta_\bot,n)] &= \beta\cdot\sum_{i>\theta_\top\cdot n}{\binom{n}{i}\xi^i(1-\xi)^{n-i}} - \alpha\cdot\sum_{i>\theta_\bot\cdot n}{\binom{n}{n-i}\xi^{(n-i)}(1-\xi)^{i}}
+    \mathbb{E}[b(\omega_i;\theta_\top,\theta_\bot,n )| v_i=\top] &= \beta\cdot\sum_{i>\theta_\top\cdot n-1}{\binom{n-1}{i}\xi^i(1-\xi)^{n-1-i}} \\
+    &- \alpha\cdot\sum_{i>\theta_\bot\cdot n}{\binom{n}{i}\xi^{(n-i)}(1-\xi)^{i}}
   \end{aligned}
 \end{equation}
-To find its Nash equilibrium, we take the logarithm of both sides of the equation and find the extreme value of $\xi$ by partial differentiation:
+\begin{equation}
+  \label{eq:expectation_bot}
+  \begin{aligned}
+    \mathbb{E}[b(\omega_i;\theta_\top,\theta_\bot,n )| v_i=\bot] &= \beta\cdot\sum_{i>\theta_\bot\cdot n-1}{\binom{n-1}{i}\xi^{n-1-i}(1-\xi)i}\\
+     &- \alpha\cdot\sum_{i>\theta_\top\cdot n}{\binom{n}{i}\xi^{i}(1-\xi)^{(n-i)}}
+  \end{aligned}
+\end{equation}
+According to Bayesian Nash equilibrium, we use bayes rule to find the Nash equilibrium:
+\begin{equation}
+  \label{eq:expectation_topl}
+  \begin{aligned}
+    \mathbb{E}[b(\omega_i;\theta_\top,\theta_\bot,n)] &=   \mathbb{E}[b(\omega_i;\theta_\top,\theta_\bot,n )| v_i=\bot]\cdot (1-\xi)\\
+    &+ \mathbb{E}[b(\omega_i;\theta_\top,\theta_\bot,n )| v_i=\top]\cdot \xi\\
+  \end{aligned}
+\end{equation}
+To find its Nash equilibrium, we take the logarithm of both sides of the equation and find the extreme value of $\xi$ by partial differentiation: We present Eqn.~\ref{eq:expectation_top} in terms of the regularized incomplete beta function:
+\begin{equation}
+  \label{eq:expectation_top_partial}
+  \begin{aligned}
+    &\frac{\partial\mathbb{E}[b(\omega_i;\theta_\top,\theta_\bot,n )| v_i=\top]}{\partial\xi} \\
+    &= \beta\cdot (n-1)\binom{n-2}{\theta_\top\cdot n-1}\int^{1-p}_0t^{(n - 1) - (\theta_\top\cdot n - 1) - 1} (1 - t)^{(\theta_\top\cdot n - 1)}\text{d} t\\
+    &-\alpha\cdot n \cdot \binom{n-1}{\theta_\bot\cdot n}\int^{1-p}_0t^{n - (\theta_\bot\cdot n) - 1} (1 - t)^{\theta_\bot\cdot n}\\
+    &= -\beta\cdot (n-1)\cdot \binom{n-2}{n\cdot\theta_\top-1}\xi^{n\cdot\theta_\top-1}(1-\xi)^{n\cdot(1-\theta_\top)-1} \\
+    &+\alpha\cdot n \cdot \binom{n-1}{n\cdot\theta_\bot}\xi^{n\cdot\theta_\bot}(1-\xi)^{n\cdot(1-\theta_\bot)-1}\\
+  \end{aligned}
+\end{equation}
+Similarly, we can find the partial derivative of $\mathbb{E}[b(\omega_i;\theta_\top,\theta_\bot,n )| v_i=\bot]$.
+\begin{equation}
+  \label{eq:expectation_bot_partial}
+  \begin{aligned}
+    &\frac{\partial\mathbb{E}[b(\omega_i;\theta_\top,\theta_\bot,n )| v_i=\bot]}{\partial\xi} \\
+    &= -\beta\cdot (n-1)\cdot \binom{n-2}{n\cdot\theta_\bot-1}\xi^{n\cdot\theta_\bot-1}(1-\xi)^{n\cdot(1-\theta_\bot)-1} \\
+    &+\alpha\cdot n \cdot \binom{n-1}{n\cdot\theta_\top}\xi^{n\cdot\theta_\top}(1-\xi)^{n\cdot(1-\theta_\top)-1}\\
+  \end{aligned}
+\end{equation}
 \begin{equation}
   \label{eq:partial}
   \begin{aligned}
-    \frac{\partial\mathbb{E}[b(\omega_i;\theta_\top,\theta_\bot,n)]}{\partial\xi} &= \frac{\beta\cdot n\cdot(\xi-\theta_\top)}{\xi\cdot(1-\xi)} - \frac{\alpha\cdot n\cdot(\xi-\theta_\bot)}{\xi\cdot(1-\xi)} = 0\\
-    \xi &= \frac{\beta\cdot\theta_\top-\alpha\cdot\theta_\bot}{\beta-\alpha}
-  \end{aligned}
+    \frac{\partial\mathbb{E}[b(\omega_i;\theta_\top,\theta_\bot,n)]}{\partial\xi} &= \frac{\partial\mathbb{E}[b(\omega_i;\theta_\top,\theta_\bot,n )| v_i=\top]}{\partial\xi}\cdot \xi+ \mathbb{E}[b(\omega_i;\theta_\top,\theta_\bot,n )| v_i=\top]\\
+    &+ \frac{\partial\mathbb{E}[b(\omega_i;\theta_\top,\theta_\bot,n )| v_i=\bot]}{\partial\xi}\cdot (1-\xi)-\mathbb{E}[b(\omega_i;\theta_\top,\theta_\bot,n )| v_i=\bot]\\
+    &=-\beta\cdot (n-1)\cdot \binom{n-2}{n\cdot\theta_\top-1}\xi^{n\cdot\theta_\top}(1-\xi)^{n\cdot(1-\theta_\top)-1} \\
+    &+\alpha\cdot n \cdot \binom{n-1}{n\cdot\theta_\bot}\xi^{n\cdot\theta_\bot+1}(1-\xi)^{n\cdot(1-\theta_\bot)-1}\\
+    & -\beta\cdot (n-1)\cdot \binom{n-2}{n\cdot\theta_\bot-1}\xi^{n\cdot\theta_\bot-1}(1-\xi)^{n\cdot(1-\theta_\bot)} \\
+    &+\alpha\cdot n \cdot \binom{n-1}{n\cdot\theta_\top}\xi^{n\cdot\theta_\top}(1-\xi)^{n\cdot(1-\theta_\top)}\\
+    &+\mathbb{E}[b(\omega_i;\theta_\top,\theta_\bot,n )| v_i=\top]-\mathbb{E}[b(\omega_i;\theta_\top,\theta_\bot,n )| v_i=\bot]\\
+    &=-\beta\cdot (n-1)\cdot \binom{n-2}{n\cdot\theta_\top-1}\xi^{n\cdot\theta_\top-1}(1-\xi)^{n\cdot(1-\theta_\top)-1} \\
+    &+\alpha\cdot n \cdot \binom{n-1}{n\cdot\theta_\bot}\xi^{n\cdot\theta_\bot}(1-\xi)^{n\cdot(1-\theta_\bot)-1}\\
+    &+\mathbb{E}[b(\omega_i;\theta_\top,\theta_\bot,n )| v_i=\top]-\mathbb{E}[b(\omega_i;\theta_\top,\theta_\bot,n )| v_i=\bot]\\
+\end{aligned}
 \end{equation}
-When $\alpha=\beta$, the Nash equilibrium degenerates to $\xi=0$ or $\xi=1$.
+Solve Eqn.~\ref{eq:partial} to find the Nash equilibrium $\xi=\frac{\theta_\bot}{\theta_\top+\theta_\bot}$.
+With any parameters, $\xi=0$ and $\xi=1$ are the trivial Nash Equilibrium points. When $\alpha=\beta$,$\theta_\top=\theta_\bot$, the Nash equilibrium degenerates to $\xi=0.5$.
 
 \subsubsection{Evaluation of $\theta$}
-We do not consider local optimal values for theta, but rather minimize global penalties (in order to prevent voters from colluding as much as possible).
+For the designers of voting mechanisms, their goal is to achieve network-wide consensus at the minimum cost. That is, we should design $\theta, \beta, \alpha$ in such a way that consensus can be effectively reached at the lowest cost (note that these three are not necessarily constants, they could very well be in the form of functions such as $\beta(\theta)$ and $\alpha(\theta)$). Here we only discuss the design of $\theta$, while $\beta$ and $\alpha$ need to be evaluated based on functional analysis, which we will publish in the form of a paper.We derivate the expectation of the payoff function with respect to $\theta_\top$ and $\theta_\bot$. According to Eqn.~\ref{eq:expectation_top}, We approximately estimate that the likelihood expectation of the derivative of $\theta_\top\cdot n$ at the point $\theta_\top\cdot n -1$ is a Beta distribution. We use $\mathbb{E}_\top$ to abbreviate $\mathbb{E}[b(\omega_i;\theta_\top,\theta_\bot,n)|v_i=\top]$
 \begin{equation}
-  \label{eq:expectation}
+  \label{eq:expectation_top_to_top}
   \begin{aligned}
-    \mathbb{E}[b(\omega_i;\theta_\top,\theta_\bot,n)\cdot X] &= \beta\cdot\sum_{i>\theta_\top\cdot n}{i\cdot\binom{n}{i}\xi^i(1-\xi)^{n-i}} - \alpha\cdot\sum_{i>\theta_\bot\cdot n}{i\cdot\binom{n}{n-i}\xi^{(n-i)}(1-\xi)^{i}}
+  \frac{\partial{\mathbb{E}}_\top}{\partial{\theta_\top}}=\frac{\partial\mathbb{E}_\top}{\partial(\theta_\top\cdot n)}\cdot\frac{\partial(\theta_\top\cdot n)}{\partial\theta_\top}= \beta\cdot n \cdot \text{f}_b(\xi;n\cdot\theta_\top,n-n\cdot\theta_\top+1)\cdot{n}\\
   \end{aligned}
 \end{equation}
-For $\theta_\top$, by taking the partial derivative, we can obtain:
 \begin{equation}
-  \label{eq:partial}
+  \label{eq:expectation_top_to_bot}
   \begin{aligned}
-    \frac{\partial\mathbb{E}[b(\omega_i;\theta_\top,\theta_\bot,n)\cdot X]}{\partial\theta_\top} &= \beta\cdot\sum_{i>\theta_\top\cdot n}{\binom{n}{i}\xi^i(1-\xi)^{n-i}} - \alpha\cdot\sum_{i>\theta_\bot\cdot n}{\binom{n}{n-i}\xi^{(n-i)}(1-\xi)^{i}} = 0\\
-    \theta_\top &= \frac{\beta\cdot\sum_{i>\theta_\top\cdot n}{\binom{n}{i}\xi^i(1-\xi)^{n-i}}}{\alpha\cdot\sum_{i>\theta_\bot\cdot n}{\binom{n}{n-i}\xi^{(n-i)}(1-\xi)^{i}}}
+  \frac{\partial{\mathbb{E}}_\top}{\partial{\theta_\bot}}= -\alpha\cdot n \cdot  \text{f}_b(1-\xi;\theta_\bot\cdot n+1,n-n\cdot\theta_\bot+1)\cdot(n+1)\\
   \end{aligned}
 \end{equation}
+\begin{equation}
+  \label{eq:expectation_bot_to_bot}
+  \begin{aligned}
+  \frac{\partial{\mathbb{E}}_\bot}{\partial{\theta_\bot}}= \beta\cdot n \cdot \text{f}_b(\xi;n\cdot\theta_\bot,n-n\cdot\theta_\bot+1)\cdot{n}\\
+  \end{aligned}
+\end{equation}
+\begin{equation}
+  \label{eq:expectation_bot_to_top}
+  \begin{aligned}
+  \frac{\partial{\mathbb{E}}_\bot}{\partial{\theta_\top}}= -\alpha\cdot n \cdot  \text{f}_b(1-\xi;\theta_\top\cdot n+1,n-n\cdot\theta_\top+1)\cdot(n+1)\\
+  \end{aligned}
+\end{equation}
+Then the condition for Bayesian Nash Equilibrium is:
+\begin{equation}
+  \label{eq:partial_theta}
+  \begin{aligned}
+    \frac{\partial{\mathbb{E}}}{\partial{\theta_\top}}=\frac{\partial{\mathbb{E}_\top}}{\partial{\theta_\top}}\cdot\xi+\frac{\partial{\mathbb{E}_\bot}}{\partial{\theta_\top}}\cdot(1-\xi)= 0\\
+    \frac{\partial{\mathbb{E}}}{\partial{\theta_\bot}}=\frac{\partial{\mathbb{E}_\top}}{\partial{\theta_\bot}}\cdot\xi+\frac{\partial{\mathbb{E}_\bot}}{\partial{\theta_\bot}}\cdot(1-\xi)= 0\\
+  \end{aligned}
+\end{equation}
+Bringing in Eqn.~\ref{eq:expectation_top_to_top}, Eqn.~\ref{eq:expectation_top_to_bot}, Eqn.~\ref{eq:expectation_bot_to_bot}, Eqn.~\ref{eq:expectation_bot_to_top}. Get the analytic solution of $\theta_\top$ and $\theta_\bot$. But generally this analytical solution is not easy to solve, we can solve it by numerical methods.
 
-
+\subsubsection{Semi-Perfect Information: $0<n^{(i)}<i-1$}
+It is worth noting that in general, $\theta_\top$ and $\theta_\bot$ are the same. However, in the typical voting process, especially regarding blockchain consensus schemes, the situation often lies between a perfect information game and an imperfect information game. We refer to this as a semi-perfect game. For instance, in a consensus network, some nodes have already seen part of the voting results before voting, while they haven't seen the rest. After excluding the results they have seen, a voting subgame forms, which is an imperfect information game. And there is a high probability that $\theta_\top \neq \theta_\bot$. In this case, we can refer to the method described in Sec.~\ref{sec:imperfect_information} to characterize this subgame problem.
 \subsubsection{Function upgrade}
 Function upgrade is a kind of event which should be included in the token $\mathcal{G}$ either.
 Only some specific users could initiate this event, wherein the subnet manager submits a transaction to modify the hostnet ledger $\mathcal{L}$ similar to registering a subnet.
@@ -423,5 +495,35 @@ The difference between this procedure and other BFT consensus algorithm is that 
 Thus, the subnet could efficiently adapt to small-scale networks and avoid collusion actions.
 
 % TODO: proof
+\subsection{Template}
+\label{sec:template}
+the maxwell equation is:
+\begin{equation}
+  \label{eqn:maxwell}
+\begin{aligned}
+\nabla\cdot\mathbf{E} &= \frac{\rho}{\varepsilon_0}\\
+\nabla\cdot\mathbf{B} &= 0\\
+\nabla\times\mathbf{E} &= -\frac{\partial\mathbf{B}}{\partial t}\\
+\nabla\times\mathbf{B} &= \mu_0\mathbf{J}+\mu_0\varepsilon_0\frac{\partial\mathbf{E}}{\partial t}
+\end{aligned}
+\end{equation}
+\begin{algorithm}
+	\caption{Proof of Distribution workflow}\label{alg:pod}
+	\begin{algorithmic}[1]
+		\State Intialization: $\mathcal{D}$, $\theta_\star$
+		\For{each epoch}
+			\State $\mathcal{V^\star}$ collects state parameters $\alpha$
+			\State $\mathcal{V^\star}$ gets priori parameters $\mathcal{P}$ from the blockchain
+			\Repeat 
+				\State Discriminate the data with $\mathcal{D}(\theta_\star, \mathcal{P})$ and $\rho(\cdot)$
+				\State Compute $\ell$ in Eqn.~\ref{eqn:maxwell}
+				\State Maximize likelihood estimation mentioned in Sec.~\ref{sec:template}
+				\State Update $\mathcal{D}$, $\theta_\star$
+			\Until {$\delta \ell<\theta_\epsilon$}
+			\State Submit each $\mathcal{T}\mapsto\mathcal{R}$ state parameter $\alpha$ and loss $\ell$ to blockchain
+		\EndFor
+	\end{algorithmic}
+  \end{algorithm}
+
 \bibliography{monadring}
 \end{document}
