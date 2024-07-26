@@ -14,74 +14,71 @@
 \usepackage{algorithm}
 \usepackage{setspace}
 \usepackage{upgreek}
+\usepackage{cite}
 \usepackage{algpseudocode}% http://ctan.org/pkg/algorithmicx
 \usepackage{tikz}
-\usepackage{draftwatermark}
+\usepackage{fancyhdr}
+% \usepackage{draftwatermark}
 \usepackage{float}
-\SetWatermarkText{\shortstack
-  {Monadring: A lightweight consensus protocol for organizing subnets upon a blockchain system
-}}
-\SetWatermarkLightness{0.05}
-\SetWatermarkScale{0.5}
+% \SetWatermarkText{\shortstack
+%   {Monadring: A lightweight consensus protocol for organizing subnets upon a blockchain system
+% }}
+% \SetWatermarkLightness{0.05}
+% \SetWatermarkScale{0.5}
+\newcommand{\version}{\small Version 0.0.6}
+
+% \pagestyle{fancy}
+% \fancyhf{}  % 
+% \fancyhead[R]{\version}  % 
+
+% \fancypagestyle{plain}{%
+%   \fancyhf{}
+%   \fancyhead[R]{\version}
+% }
 
 \newcommand{\eqq}{\stackrel{?}{=}} 
 
-\bibliographystyle{plain}
+% \bibliographystyle{plain}
 
 \begin{document}
 
-\title{Monadring: A lightweight consensus protocol for organizing subnets upon a blockchain system}
-\author[*]{Zhang Yu}
-\author[*]{Yan Xiao}
-\author[*]{Gang Tang}
-\author[*]{Helena Wang}
-\affil[*]{Verisense}
-\date{June 15, 2024}
+% \title{Monadring: A lightweight consensus protocol for organizing subnets upon a blockchain system}
+\title{Monadring: A lightweight consensus protocol to offer Validation-as-a-Service to AVS nodes}
+\author{Yu Zhang\qquad Xiao Yan\qquad Gang Tang\qquad Helena Wang}
+\affil{Verisense Network\\{\small team@verisense.network}}
+\date{\small \today\\\version}
 \maketitle
 
 \begin{abstract}
-Existing blockchain networks are often large-scale, requiring transactions to be synchronized across the entire network to reach consensus, and on-chain computations can be prohibitively expensive, making many CPU-sensitive computations infeasible.
 
-Inspired by the structure of IBM's token ring networks, we propose a lightweight consensus protocol called Monadring to address these issues. Monadring allows nodes that are already part of a large blockchain network to form a smaller subnetwork to perform computations more quickly and cheaply, while still maintaining the same security guarantees as the main blockchain network.
+  
+Existing blockchain networks are often large-scale, requiring transactions to be synchronized across the entire network to reach consensus. On-chain computations can be prohibitively expensive, making many CPU-intensive computations infeasible. Inspired by the structure of IBM’s token ring networks, we propose a lightweight consensus protocol called Monadring to address these issues. Monadring allows nodes within a large blockchain network to form smaller subnetworks, enabling faster and more cost-effective computations while maintaining the security guarantees of	the	main	blockchain	network.
 
-To further enhance the security of Monadring, we introduce a node rotation mechanism based on Verifiable Random Function (VRF) and blind voting based on Fully Homomorphic Encryption (FHE) within the smaller subnetwork. Unlike the common voting-based election of validator nodes, the election in Monadring leverages FHE to hide the voting information, eliminating the advantage of the last mover in the voting game.
+To further enhance Monadring's security, we introduce a node rotation mechanism based on Verifiable Random Function (VRF) and blind voting using Fully Homomorphic Encryption (FHE) within the smaller subnetwork. Unlike the common voting-based election of validator nodes, Monadring leverages FHE to conceal voting information, eliminating the advantage of the  last  mover  in  the  voting  process.
 
-The paper details the design and implementation of the Monadring protocol, and evaluates its performance and feasibility through simulation experiments. This research contributes to enhancing the practical utility of blockchain technology in large-scale application scenarios.
+This paper details the design and implementation of the Monadring protocol and evaluates its performance and feasibility through simulation experiments. Our research contributes to enhancing the practical utility of blockchain technology in large-scale application scenarios.
+
+
+
 \end{abstract}
 
 \section{Introduction}
-Recent blockchain systems have often adopted faster and more energy-efficient consensus protocols like Ouroboros, BABE, and Tendermint.
-Blockchain networks are typically open and permissionless, and we can define the degree of decentralization of such networks by the number of participating nodes.
-Leveraging the consensus protocols mentioned earlier, it is possible to rapidly construct new blockchain networks.
-However, decentralized applications often cannot flexibly customize their degree of decentralization based on the importance of their underlying data.
+Recent blockchain systems have adopted faster and more energy-efficient consensus protocols like Ouroboros\cite{cryptoeprint:2016/889}, BABE\cite{burdges2020overview}, and Tendermint\cite{buchman2016tendermint}. These networks are typically open and permissionless, with their degree of decentralization defined by the number of participating nodes. Leveraging the aforementioned consensus protocols, new blockchain networks can be rapidly constructed. However, decentralized applications often cannot flexibly customize their degree of decentralization based on the importance of their underlying data.
 
-For example, decentralized social media applications may require faster response times and lower storage costs compared to decentralized finance applications, and hence may need a lower degree of decentralization.
-This flexibility to adjust the level of decentralization based on the needs of the application is an important consideration that has not been fully addressed in existing blockchain architectures.
+For instance, decentralized social media applications may require faster response times and lower storage costs compared to decentralized finance applications, necessitating a lower degree of decentralization. This flexibility to adjust the level of decentralization based on the needs of the application is a critical consideration that existing blockchain architectures have not fully addressed.
 
-Building a subnetwork over an existing blockchain system is a possible way to address this issue.
-By drawing inspiration from the token ring architecture, we propose a novel consensus protocol called Monadring that aims to enable nodes within an existing blockchain network to form smaller, lightweight subnetworks capable of performing computations more efficiently and cost-effectively, while still maintaining the same security guarantees as the main blockchain.
+Building a subnetwork over an existing blockchain system is a potential solution to this issue. Inspired by the token ring architecture, we propose a novel consensus protocol called Monadring. Monadring enables nodes within an existing blockchain network to form smaller, lightweight subnetworks that can perform computations more efficiently and cost-effectively while maintaining the same security guarantees as the main blockchain.
 
-Token ring network operates at the data link layer of the OSI/RM model.
-It was designed to solve the problem of physical link contention just like Ethernet.
-In a token ring network, a token is passed sequentially from one node to the next, granting the holder the right to transmit data.
-This token-based system for managing access to the shared medium bears some similarity to the consensus mechanisms used in blockchain networks for selecting block producer.
+The token ring network operates at the data link layer of the OSI/RM model and was designed to solve the problem of physical link contention, similar to Ethernet. In a token ring network, a token is passed sequentially from one node to the next, granting the holder the right to transmit data. This token-based system for managing access to the shared medium bears some similarity to the consensus mechanisms used in blockchain networks for selecting block producers.
 
-Despite the fact that token ring networks have largely fallen out of favor in modern networking due to their limited scalability and other drawbacks, the underlying principles of their decentralized, token-based structure could provide valuable insights for designing a lightweight consensus algorithm for small blockchain systems.
+Despite token ring networks largely falling out of favor in modern networking due to their limited scalability and other drawbacks, the underlying principles of their decentralized, token-based structure offer valuable insights for designing a lightweight consensus algorithm for small blockchain systems.
 
-Monadring also involves FHE-based member rotation mechanism to enhance the security.
-Homomorphic encryption (HE) is a method of encryption that allows computations to be carried out on encrypted data, generating an encrypted result which, when decrypted, matches the outcome of computations performed on the plaintext.
-This property enables sophisticated computations on encrypted data while maintaining data security.
-HE schemes are a type of encryption method that can protect data privacy because they allow computations to be performed directly on the encrypted data.
-For example, an HE scheme might allow a user to perform operations like addition and multiplication on encrypted numbers, and these operations would have the same result as if they were performed on the original, unencrypted numbers.
-This technology is seen as a key component for secure cloud computing since it allows complex data manipulations to be carried out on completely secure encrypted data.
+Monadring also involves an FHE-based member rotation mechanism to enhance security. Homomorphic encryption (HE) \cite{acar2018survey} is a method of encryption that allows computations to be carried out on encrypted data, generating an encrypted result which, when decrypted, matches the outcome of computations performed on the plaintext. This property enables sophisticated computations on encrypted data while maintaining data security. HE schemes protect data privacy by allowing computations to be performed directly on encrypted data. For example, an HE scheme might allow a user to perform operations like addition and multiplication on encrypted numbers, with the same result as if they were performed on the original, unencrypted numbers. This technology is essential for secure cloud computing as it allows complex data manipulations on completely secure encrypted data.
 
-Fully Homomorphic Encryption (FHE) is a more advanced form of Homomorphic Encryption.
-FHE allows arbitrary computations to be carried out on encrypted data, which is not the case with normal HE which might be limited in the types of computation it supports.
-FHE computations generate a result that, when decrypted, corresponds to the result of the same computations performed on the plaintext.
-This makes FHE extremely useful for cases where sensitive data must be processed or analyzed, but security and privacy considerations prevent the data from being decrypted.
-With FHE, you can perform unlimited calculations on this encrypted data just like you would on unencrypted data. For instance, in the field of cloud computing, FHE allows users to operate computations on encrypted data stored in the cloud, preserving data confidentiality and privacy.
+Fully Homomorphic Encryption (FHE)\cite{chillotti2020tfhe} is a more advanced form of Homomorphic Encryption. FHE allows arbitrary computations to be carried out on encrypted data, unlike normal HE, which may be limited in the types of computations it supports. FHE computations generate a result that, when decrypted, corresponds to the result of the same computations performed on the plaintext. This makes FHE extremely useful for scenarios where sensitive data must be processed or analyzed, but security and privacy considerations prevent the data from being decrypted. With FHE, unlimited calculations can be performed on encrypted data just as on unencrypted data. For instance, in cloud computing, FHE allows users to operate computations on encrypted data stored in the cloud, preserving data confidentiality and privacy.
 
-In small-scale decentralized networks with randomly determined members, the application of fully homomorphic encryption (FHE) for voting can be mathematically equivalent to the Prisoner's Dilemma. By incorporating appropriate incentive structures, it is possible to achieve both efficiency and security in such decentralized networks.
+In small-scale decentralized networks with randomly determined members, the application of FHE for voting can be mathematically equivalent to the Prisoner’s Dilemma. By incorporating appropriate incentive structures, it is possible to achieve both efficiency and security in such decentralized networks.
+
 \subsection{Overall Framework}
 The framework is illustrated as Fig.~\ref{fig:framework}.
 Section \ref{sec:math} demonstrates the mathematical model for transforming perfect information games in voting into imperfect information games through FHE, thereby eliminating the advantage of the last voter. Section \ref{sec:protocol} outlines the Monadring protocol. The topological structure of Monadring and Token Circulation are detailed in Section \ref{sec:subnet_topology}, while initialization and Node Rotation are explained in Section \ref{sec:launch_subnet_and_rotate}. Fault Tolerance mechanisms are discussed in Section \ref{sec:fault_tolerance}.  Section \ref{sec:key_sharing} covers the processes of Key Sharing and Key Resharing.
@@ -94,7 +91,7 @@ Section \ref{sec:math} demonstrates the mathematical model for transforming perf
   \hspace*{-80pt}
   % \includegraphics[scale=1]{framework.pdf}
 \begin{tikzpicture}[x=0.75pt,y=0.75pt,yscale=-1,xscale=1]
-  %uncomment if require: \path (0,440); %set diagram left start at 0, and has height of 440
+  %uncomment if require: \path (0,460); %set diagram left start at 0, and has height of 460
   
   %Shape: Circle [id:dp1550676231110797] 
   \draw   (68.17,52.96) .. controls (68.17,47.37) and (72.7,42.83) .. (78.29,42.83) .. controls (83.88,42.83) and (88.42,47.37) .. (88.42,52.96) .. controls (88.42,58.55) and (83.88,63.08) .. (78.29,63.08) .. controls (72.7,63.08) and (68.17,58.55) .. (68.17,52.96) -- cycle ;
@@ -195,7 +192,7 @@ Section \ref{sec:math} demonstrates the mathematical model for transforming perf
   %Shape: Circle [id:dp496396412617679] 
   \draw  [color={rgb, 255:red, 0; green, 0; blue, 0 }  ,draw opacity=1 ] (551.9,102.96) .. controls (551.9,97.37) and (556.43,92.83) .. (562.02,92.83) .. controls (567.62,92.83) and (572.15,97.37) .. (572.15,102.96) .. controls (572.15,108.55) and (567.62,113.08) .. (562.02,113.08) .. controls (556.43,113.08) and (551.9,108.55) .. (551.9,102.96) -- cycle ;
   %Shape: Circle [id:dp345685330205328] 
-  \draw   (551.9,153.79) .. controls (551.9,148.2) and (556.43,143.67) .. (562.02,143.67) .. controls (567.62,143.67) and (572.15,148.2) .. (572.15,153.79) .. controls (572.15,159.38) and (567.62,163.92) .. (562.02,163.92) .. controls (556.43,163.92) and (551.9,159.38) .. (551.9,153.79) -- cycle ;
+  \draw  [fill={rgb, 255:red, 207; green, 207; blue, 207 }  ,fill opacity=1 ] (551.9,153.79) .. controls (551.9,148.2) and (556.43,143.67) .. (562.02,143.67) .. controls (567.62,143.67) and (572.15,148.2) .. (572.15,153.79) .. controls (572.15,159.38) and (567.62,163.92) .. (562.02,163.92) .. controls (556.43,163.92) and (551.9,159.38) .. (551.9,153.79) -- cycle ;
   %Shape: Circle [id:dp29912398392195483] 
   \draw   (605.9,103.46) .. controls (605.9,97.87) and (610.43,93.33) .. (616.02,93.33) .. controls (621.62,93.33) and (626.15,97.87) .. (626.15,103.46) .. controls (626.15,109.05) and (621.62,113.58) .. (616.02,113.58) .. controls (610.43,113.58) and (605.9,109.05) .. (605.9,103.46) -- cycle ;
   %Straight Lines [id:da06038898938475712] 
@@ -225,7 +222,7 @@ Section \ref{sec:math} demonstrates the mathematical model for transforming perf
   %Rounded Diagonal Corner Rect [id:dp16713826394531428] 
   \draw   (263.33,252.33) .. controls (263.33,247.92) and (266.92,244.33) .. (271.33,244.33) -- (418,244.33) .. controls (418,244.33) and (418,244.33) .. (418,244.33) -- (418,276.33) .. controls (418,280.75) and (414.42,284.33) .. (410,284.33) -- (263.33,284.33) .. controls (263.33,284.33) and (263.33,284.33) .. (263.33,284.33) -- cycle ;
   %Flowchart: Alternative Process [id:dp9007000048603655] 
-  \draw  [dash pattern={on 4.5pt off 4.5pt}] (249.8,159.47) .. controls (249.8,142.88) and (263.25,129.44) .. (279.83,129.44) -- (397.3,129.44) .. controls (413.89,129.44) and (427.33,142.88) .. (427.33,159.47) -- (427.33,271.01) .. controls (427.33,287.6) and (413.89,301.04) .. (397.3,301.04) -- (279.83,301.04) .. controls (263.25,301.04) and (249.8,287.6) .. (249.8,271.01) -- cycle ;
+  \draw  [color={rgb, 255:red, 0; green, 0; blue, 0 }  ,draw opacity=1 ][dash pattern={on 4.5pt off 4.5pt}] (249.8,158.8) .. controls (249.8,142.22) and (263.25,128.77) .. (279.83,128.77) -- (397.3,128.77) .. controls (413.89,128.77) and (427.33,142.22) .. (427.33,158.8) -- (427.33,270.34) .. controls (427.33,286.93) and (413.89,300.38) .. (397.3,300.38) -- (279.83,300.38) .. controls (263.25,300.38) and (249.8,286.93) .. (249.8,270.34) -- cycle ;
   %Straight Lines [id:da7987000975982605] 
   \draw    (343.77,187.31) -- (343.54,233.05)(340.77,187.3) -- (340.54,233.03) ;
   \draw [shift={(342,241.04)}, rotate = 270.28] [color={rgb, 255:red, 0; green, 0; blue, 0 }  ][line width=0.75]    (10.93,-3.29) .. controls (6.95,-1.4) and (3.31,-0.3) .. (0,0) .. controls (3.31,0.3) and (6.95,1.4) .. (10.93,3.29)   ;
@@ -276,13 +273,18 @@ Section \ref{sec:math} demonstrates the mathematical model for transforming perf
   % Text Node
   \draw (521.6,227.69) node   [align=left] {\begin{minipage}[lt]{81.96pt}\setlength\topsep{0pt}
   \begin{center}
-  {\footnotesize Fault Tolerance}\\{\footnotesize Voting Consensus}
+  {\footnotesize Fault Tolerance}\\{\footnotesize Voting Slashing}
   \end{center}
   
   \end{minipage}};
+  % Text Node
+  \draw (530,167.67) node [anchor=north west][inner sep=0.75pt]   [align=left] {{\scriptsize Malicious Node}};
   
   
   \end{tikzpicture}
+  
+  
+
   \caption{Illustration of Monadring Framework}
   \label{fig:framework}
 \end{figure}
@@ -344,7 +346,7 @@ The BFV scheme consists of the following algorithms:
     $$\mathbf{m}=\left[\left\lfloor p\cdot[\texttt{ct}_0+\texttt{ct}_1\cdot\mathbf{s}]_q/q\right\rceil\right]_t$$
 \end{itemize}
 
-It's noteworthy that the BFV scheme differs from the BGV scheme in ciphertext placement. In BGV, the ciphertext is placed in the Least Significant Digit (LSD):
+It's noteworthy that the BFV scheme differs from the BGV scheme\cite{brakerski2014leveled} in ciphertext placement. In BGV, the ciphertext is placed in the Least Significant Digit (LSD):
 
 \begin{itemize}
 \item \texttt{BGV.PublicKeyGen(\texttt{sk})}: $$\texttt{pk}=([-\mathbf{a}\cdot{s}+p\mathbf{e}]_q, \mathbf{a})$$
@@ -368,7 +370,7 @@ This condition is crucial because the decryption process involves a $p/q$ scalin
 \subsubsection{Shamir's Secret Sharing Scheme}
 \label{sec:shamir}
 
-Shamir's Secret Sharing, devised by Adi Shamir, is a cryptographic algorithm that enables secure distribution of a secret among multiple participants. Its key feature is the minimal number of shares required to reconstruct the secret. The process for threshold private key sharing using Shamir's scheme is as follows:
+Shamir's Secret Sharing\cite{pang2005new}, devised by Adi Shamir, is a cryptographic algorithm that enables secure distribution of a secret among multiple participants. Its key feature is the minimal number of shares required to reconstruct the secret. The process for threshold private key sharing using Shamir's scheme is as follows:
 
 \begin{enumerate}
     \item \textbf{Threshold Selection:} Define a threshold $t$, where knowledge of fewer than $t$ points reveals no information about the secret, but $t$ or more points allow secret reconstruction.
@@ -398,7 +400,7 @@ This approach ensures that the private key is never fully revealed to any single
 \subsubsection{Resharing Scheme}
 \label{sec:resharing}
 
-In practical applications, it may be necessary to redistribute keys. This process, known as resharing, involves transforming an original $(n,t)$ key sharing scheme into a $(n',t')$ scheme, which can be achieved using Lagrange interpolation.
+In practical applications, it may be necessary to redistribute keys. This process, known as resharing\cite{groth2021non}, involves transforming an original $(n,t)$ key sharing scheme into a $(n',t')$ scheme, which can be achieved using Lagrange interpolation.
 
 Assume an initial $(n,t)$ key sharing of $s$, where $s=\mathcal{P}(0)$. Let $\mathcal{L}^\mathcal{N}_i$ be the Lagrange basis for the original $(n,t)$ key sharing user set $\mathcal{N}$, and $\mathcal{M}$ be the user set for the new $(n',t')$ sharing. The resharing process can be expressed as:
 
@@ -423,7 +425,7 @@ The resharing scheme provides a flexible method for adjusting share distribution
 % This chapter primarily addresses the wireless signal strength model, focusing particularly on the signal transmission model applicable to space satellites and terrestrial receivers. Central to the discussion are two key assumptions pivotal to consensus algorithms: spatial continuity and temporal continuity. Instead of delving deep into the intricacies of the related formulas, this chapter accords higher importance to the qualitative conclusions derived from these equations.
 \subsection{Game Theory}
 \label{sec:game_theory}
-This chapter elucidates the design of a game-theory based security framework to ensure system safety and reliability. We begin by introducing fundamental concepts of game theory, followed by a discussion on transforming perfect information games into imperfect information games using fully homomorphic encryption (FHE) techniques. Finally, we present a security framework based on Bayesian games and demonstrate how game theory principles can be applied to design a secure voting mechanism, thereby enhancing overall system security.
+This chapter elucidates the design of a game-theory\cite{fudenberg1991game} based security framework to ensure system safety and reliability. We begin by introducing fundamental concepts of game theory, followed by a discussion on transforming perfect information games into imperfect information games using fully homomorphic encryption (FHE) techniques. Finally, we present a security framework based on Bayesian games and demonstrate how game theory principles can be applied to design a secure voting mechanism, thereby enhancing overall system security.
 
 \subsubsection{Basic Definitions}
 
@@ -441,7 +443,7 @@ Games can be classified based on information availability:
 
 \subsubsection{Nash Equilibrium}
 
-The Nash equilibrium is a fundamental concept in game theory, representing a state where no player can gain an advantage by unilaterally changing their strategy, given that all other players' strategies remain fixed.
+The Nash equilibrium is a fundamental concept in game theory, representing a state where no player can gain an advantage by unilaterally changing their strategy, given that all other players' strategies remain fixed.\cite{daskalakis2009complexity}
 
 The best response function of player $i$, denoted by $\texttt{BR}_i(\sigma_{-i})$, is defined as:
 
@@ -623,7 +625,7 @@ We propose a method to transform perfect information games into imperfect inform
        =& \beta\cdot\sum_{i>\theta_\bot\cdot n-1}{\binom{n-1}{i}\xi^{n-1-i}(1-\xi)^i}- \alpha\cdot\sum_{i>\theta_\top\cdot n}{\binom{n}{i}\xi^{i}(1-\xi)^{(n-i)}}
     \end{aligned}
   \end{equation}
-  According to Bayes' theorem,our a posteriori expectation is:
+  According to Bayes' theorem, the posteriori expectation is:
   \begin{equation}
     \label{eq:expectation_topl}
     \begin{aligned}
@@ -631,7 +633,7 @@ We propose a method to transform perfect information games into imperfect inform
       = &\mathbb{E}[b(\omega_i;\theta_\top,\theta_\bot,n )| v_i=\bot]\cdot (1-\xi)+ \mathbb{E}[b(\omega_i;\theta_\top,\theta_\bot,n )| v_i=\top]\cdot \xi\\
     \end{aligned}
   \end{equation}
-  We consider a Pareto optimal solution to Eqn.~\ref{eq:expectation_topl}, maximising the postponed expectation:
+  We consider a Pareto optimal solution to Eqn.~\ref{eq:expectation_topl}, maximising the posterior expectation:
   \begin{equation}
     \label{eq:partial}
     \begin{aligned}
@@ -732,7 +734,7 @@ We propose a method to transform perfect information games into imperfect inform
 
 \section{Monadring Protocol}
 \label{sec:protocol}
-We want to formalize the procedure of organizing some partial nodes of an existing blockchain network to form a smaller, i.e., implementing this protocol as a plugin of some specific blockchain node programs.
+We want to formalize the procedure of organizing some partial nodes of an existing blockchain network to form a smaller subnet, i.e., implementing this protocol as a plugin of some specific blockchain node programs.
 \subsection{Network Architecture}
 \subsubsection{Model and definitions}
 \paragraph{Hostnet and subnet.}
@@ -753,7 +755,7 @@ A subnet could handle query and update requests independently from the hostnet l
 We can assume that the subnet ledger has properties as below:
 
 \begin{itemize}
-\item The subnet ledger contains all the modification events and each event has an increasemental number as index.
+\item The subnet ledger contains all the modification events and each event has an incremental number as index.
 The ledger is expected to be in a deterministic state after the $n_{th}$ event being applied, \(\mathcal{S}_{n+1} = f(\mathcal{S}_{n}, e_{n})\).
 \item Particularly, changing the function $f$ is also a kind of event. The first event $e_{0}$ is loading the function.
 \item The time complexity of looking up the $n_{th}$ event is $\mathcal{O}(1)$.
@@ -765,12 +767,12 @@ A node in a subnet can write the subnet ledger only when it holds the token $\ma
 
 \subsubsection{Subnet topology}
 \label{sec:subnet_topology}
-The participants of the subnet strictly follows the sequence of the \texttt{nodelist} to form a ring topology.
+The participants of the subnet strictly follow the sequence of the \texttt{nodelist} to form a ring topology.
 The \texttt{token} $\mathcal{T}$ of a subnet with $n$ nodes circulates around the subnet following the sequence of the \texttt{nodelist}.
 
 \begin{itemize}
 \item The \texttt{token} $\mathcal{T}$ of a subnet carries groups of events noted as $\mathbf{G}$ from its sender and the sender{'}s forehead recursively.
-\item Group $\mathcal{G}_{i}$ is composed by the node $v_{i}$. It contains a list of modification events originally from its pending request queue, the node{'}s digital signature, a digest of its local ledger after these modification applied, a number $q$ indicates how many times this group should delivered, the \texttt{nonce} of the signer and \texttt{ct} represents the voting data using FHE:
+\item Group $\mathcal{G}_{i}$ is composed by the node $v_{i}$. It contains a list of modification events originally from its pending request queue, the node{'}s digital signature, a digest of its local ledger after these modifications applied, a number $q$ indicates how many times this group should delivered, the \texttt{nonce} of the signer and \texttt{ct} represents the voting data using FHE:
 \begin{equation}
 \mathcal{G}_{i} = (\mathbf{E} = [e_{k}, e_{k+1}..e_{k+n}], \mathcal{S}_{k+n}, \texttt{signature}, \texttt{nonce}, q, [\texttt{ct},..])
 \end{equation}
@@ -803,16 +805,11 @@ A node could execute the events from broadcasting only if the \texttt{eventid} s
 \subsection{Procedures}
 \subsubsection{Launching a subnet and rotating subnet members}
 \label{sec:launch_subnet_and_rotate}
-To launch a subnet, a publishing procedure similar to publishing a smart contract is required.
-It requires a deterministic function $f$ in form of executable binary code.
 
-Once the transaction is confirmed on the hostnet, any nodes can register to become nodes within the subnet.
-When the number of registered nodes reaches a certain \texttt{threshold}, these registered nodes will synchronize the function $f$ specified in the registration information and begin running it locally.
-The token $\mathcal{T}$ initializes following the order of member registering.
-And the \texttt{FHEKeyGen} procedure mentioned in the previous section will be executed.
+To launch a subnet, a publishing procedure similar to deploying a smart contract is required. This involves a deterministic function $f$ in the form of executable binary code. Once the transaction is confirmed on the host network, any nodes can register to join the subnet. When the number of registered nodes reaches a certain \texttt{threshold}, these nodes will synchronize the function $f$ specified in the registration information and begin executing it locally. The token $\mathcal{T}$ initializes following the order of member registration, and the \texttt{FHEKeyGen} procedure mentioned previously will be executed.
 
-After surpassing the threshold for registered nodes, subnet nodes need to undergo periodic rotation to ensure randomness and reduce the potential for collusion.
-This rotation process can specifically utilize verifiable random function (VRF) or simple pseudo random function using a deterministic seed to select nodes for rotation in and out of the subnet, e.g., the block hash of the end of each epochs.
+After surpassing the threshold for registered nodes, subnet nodes must undergo periodic rotation to ensure randomness and reduce the potential for collusion. This rotation process can utilize a verifiable random function (VRF) or a simple pseudorandom function with a deterministic seed, such as the block hash at the end of each epoch, to select nodes for rotation in and out of the subnet.
+
 
 % \begin{algorithm}[h!]
 %   \caption{Join a subnet}
@@ -827,7 +824,7 @@ This rotation process can specifically utilize verifiable random function (VRF) 
 % \end{algorithm}
 
 \subsubsection{Node offline and token recovery}
-The token might be disappered during circulates within the subnet if some nodes went offline or due to malicious behaviors.
+The token might be disappeared during circulates within the subnet if some nodes go offline or due to malicious behaviors.
 
 Assume a node $v_{i}$ of a subnet $\mathbf{S} = [v_{0}, v_{1}, .., v_{n-1}]$ holds the token $\mathcal{T}$ at moment $t$.
 At the same time, all the rest nodes $\forall v_{j} \in \mathbf{S}, (i \ne j)$ keep the copy $\tau_{j}$ of the token $\mathcal{T}$ when they received it, e.g., $v_{0}$ keeps a copy $\tau_{0}$ of $\mathcal{T}_{0}$ delivered from $v_{n-1}$.
@@ -835,15 +832,13 @@ We call $\tau_{j}$ is the \textit{last seen token} of $v_{j}$.
 The $\tau_{j}$ could be \texttt{null} since $v_{j}(j > i)$ may be a new member and never received the token before.
 
 To recover the missing token, all nodes $v_{i} \in \mathbf{S}$ need to set a timer with countdown $\texttt{len}(\mathbf{S}) * \epsilon$ after they delivered it, where $\epsilon$ is the rough estimation of the execution time on a single node or a constant setting of the subnet.
-When the timer of $v_{i}$ triggered, $v_{i}$ should resend the copy $\tau_{i}$ to its succesor and reset the timer.
+When the timer of $v_{i}$ triggered, $v_{i}$ should resend the copy $\tau_{i}$ to its successor and reset the timer.
 For a node $v_{i}$ receives a copy $\tau_{i}$ of the token, it is clearly to recognize that $\tau_{i}$ is a copy since $v_{i}$ had handled the events within it already.
 
 \subsubsection{Function upgrade}
-Function upgrade is a kind of event which should be included in the token $\mathcal{G}$ either.
-Only some specific users could initiate this event, wherein the subnet manager submits a transaction to modify the hostnet ledger $\mathcal{L}$ similar to registering a subnet.
+A function upgrade is an event that should be included in the token $\mathcal{G}$. Only specific users can initiate this event, where the subnet manager submits a transaction to modify the hostnet ledger $\mathcal{L}$, similar to registering a subnet. The transaction should include not only the function itself but also a digest and version, such as an executable WASM binary with its corresponding digest and version.
 
-Besides the function itself, a digest and version should be included in this transaction, e.g., an executable WASM binary with digest and version.
-Thus, once a upgrading transaction is confirmed by hostnet, any members of the subnet could include this event into token $\mathcal{T}$ if the hostnet ledger contains a higher version function but an associated event is absent in the token.
+Once an upgrade transaction is confirmed by the hostnet, any members of the subnet can include this event into token $\mathcal{T}$ if the hostnet ledger contains a higher version of the function but the associated event is absent in the token.
 
 \subsection{Fault Tolerance with FHE}
 \label{sec:fault_tolerance}
@@ -875,7 +870,7 @@ Thus, the subnet could efficiently adapt to small-scale networks and avoid collu
 \subsection{Framework Workflow}
 \label{sec:framework_workflow}
 The Framework Workflow of Monadring is described in Algorithm~\ref{alg:monadring}.
-\begin{algorithm}
+\begin{algorithm}[h!]
 	\caption{Monadring Workflow}
   \label{alg:monadring}
 	\begin{algorithmic}[1]
@@ -893,8 +888,8 @@ The Framework Workflow of Monadring is described in Algorithm~\ref{alg:monadring
           \State Decrease the $q$ of executed groups.
           \State Handle transactions from the local queue.
           \State Deliver $\mathcal{T}$ to its successor.
-          \State $q \leftarrow q - 1$
         \EndIf
+          \State $q \leftarrow q - 1$
       \EndWhile
       \State Rotate the subnet members described in Section~\ref{sec:launch_subnet_and_rotate}.
       \If {Malicious behaviours detected}
@@ -904,6 +899,19 @@ The Framework Workflow of Monadring is described in Algorithm~\ref{alg:monadring
 		\EndFor
 	\end{algorithmic}
   \end{algorithm}
+\section{Future Work}
+We are currently in the process of implementing several key solutions to advance our research:
 
+\begin{itemize}
+  \item Integration of Zama\cite{TFHE-rs}'s FHE library: We are working on incorporating Fully Homomorphic Encryption techniques using Zama's library to enhance privacy and security in our system.
+  \item Adoption of Substrate framework: We are actively implementing the Substrate blockchain development framework to improve the scalability and interoperability of our solution.
+  \item Decoupling of runtime and consensus: Our team is focusing on separating the runtime and consensus mechanisms, a change we anticipate will significantly enhance both flexibility and performance.
+  \item Additional improvements: We are addressing numerous other areas for enhancement, including optimizing data structures, improving network protocols, and refining our cryptographic approaches.
+\end{itemize}
+These initiatives represent our current focus and the direction of our ongoing work. We will continue to refine and expand upon this paper over the coming months, providing more detailed analyses, implementation specifics, and preliminary results as our work progresses. 
+
+
+
+\bibliographystyle{unsrt}
 \bibliography{monadring}
 \end{document}
