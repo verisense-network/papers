@@ -1,0 +1,85 @@
+\begin{thebibliography}{10}
+
+\bibitem{cryptoeprint:2016/889}
+Aggelos Kiayias, Alexander Russell, Bernardo David, and Roman Oliynykov.
+\newblock Ouroboros: A provably secure proof-of-stake blockchain protocol.
+\newblock Cryptology ePrint Archive, Paper 2016/889, 2016.
+\newblock \url{https://eprint.iacr.org/2016/889}.
+
+\bibitem{burdges2020overview}
+Jeff Burdges, Alfonso Cevallos, Peter Czaban, Rob Habermeier, Syed Hosseini, Fabio Lama, Handan~Kilinc Alper, Ximin Luo, Fatemeh Shirazi, Alistair Stewart, et~al.
+\newblock Overview of polkadot and its design considerations.
+\newblock {\em arXiv preprint arXiv:2005.13456}, 2020.
+
+\bibitem{buchman2016tendermint}
+Ethan Buchman.
+\newblock {\em Tendermint: Byzantine fault tolerance in the age of blockchains}.
+\newblock PhD thesis, University of Guelph, 2016.
+
+\bibitem{acar2018survey}
+Abbas Acar, Hidayet Aksu, A~Selcuk Uluagac, and Mauro Conti.
+\newblock A survey on homomorphic encryption schemes: Theory and implementation.
+\newblock {\em ACM Computing Surveys (Csur)}, 51(4):1--35, 2018.
+
+\bibitem{chillotti2020tfhe}
+Ilaria Chillotti, Nicolas Gama, Mariya Georgieva, and Malika Izabach{\`e}ne.
+\newblock Tfhe: fast fully homomorphic encryption over the torus.
+\newblock {\em Journal of Cryptology}, 33(1):34--91, 2020.
+
+\bibitem{10.1007/978-3-642-32009-5_50}
+Zvika Brakerski.
+\newblock Fully homomorphic encryption without modulus switching from classical gapsvp.
+\newblock In Reihaneh Safavi-Naini and Ran Canetti, editors, {\em Advances in Cryptology -- CRYPTO 2012}, pages 868--886, Berlin, Heidelberg, 2012. Springer Berlin Heidelberg.
+
+\bibitem{cryptoeprint:2012/144}
+Junfeng Fan and Frederik Vercauteren.
+\newblock Somewhat practical fully homomorphic encryption.
+\newblock Cryptology ePrint Archive, Paper 2012/144, 2012.
+\newblock \url{https://eprint.iacr.org/2012/144}.
+
+\bibitem{brakerski2014leveled}
+Zvika Brakerski, Craig Gentry, and Vinod Vaikuntanathan.
+\newblock (leveled) fully homomorphic encryption without bootstrapping.
+\newblock {\em ACM Transactions on Computation Theory (TOCT)}, 6(3):1--36, 2014.
+
+\bibitem{pang2005new}
+Liao-Jun Pang and Yu-Min Wang.
+\newblock A new (t, n) multi-secret sharing scheme based on shamir’s secret sharing.
+\newblock {\em Applied Mathematics and Computation}, 167(2):840--848, 2005.
+
+\bibitem{groth2021non}
+Jens Groth.
+\newblock Non-interactive distributed key generation and key resharing.
+\newblock {\em Cryptology ePrint Archive}, 2021.
+
+\bibitem{fudenberg1991game}
+Drew Fudenberg and Jean Tirole.
+\newblock {\em Game theory}.
+\newblock MIT press, 1991.
+
+\bibitem{daskalakis2009complexity}
+Constantinos Daskalakis, Paul~W Goldberg, and Christos~H Papadimitriou.
+\newblock The complexity of computing a nash equilibrium.
+\newblock {\em Communications of the ACM}, 52(2):89--97, 2009.
+
+\bibitem{feldman1987practical}
+Paul Feldman.
+\newblock A practical scheme for non-interactive verifiable secret sharing.
+\newblock In {\em 28th Annual Symposium on Foundations of Computer Science (sfcs 1987)}, pages 427--438. IEEE, 1987.
+
+\bibitem{gennaro2007secure}
+Rosario Gennaro, Stanislaw Jarecki, Hugo Krawczyk, and Tal Rabin.
+\newblock Secure distributed key generation for discrete-log based cryptosystems.
+\newblock {\em Journal of Cryptology}, 20:51--83, 2007.
+
+\bibitem{grandpa}
+Eleftherios Kokoris-Kogia Alistair~Stewart.
+\newblock Grandpa: a byzantine finality gadget.
+\newblock {\em arXiv:2007.01560}, 2020.
+
+\bibitem{TFHE-rs}
+Zama.
+\newblock {TFHE-rs: A Pure Rust Implementation of the TFHE Scheme for Boolean and Integer Arithmetics Over Encrypted Data}, 2022.
+\newblock \url{https://github.com/zama-ai/tfhe-rs}.
+
+\end{thebibliography}
