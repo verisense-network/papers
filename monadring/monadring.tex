@@ -328,6 +328,7 @@ Correspondingly, $\mathcal{R}_q$ is defined as $(\mathbb{Z}/q\mathbb{Z})[X]/(X^N
 We denote distributions as $\chi_{\sigma^2,\mu}$, where $\sigma^2$ is the variance and $\mu$ is the mean. The uniform ternary distribution and discrete Gaussian distribution are represented by $\chi_\mathcal{T}$ and $\chi_\mathcal{N}$ respectively. In the standard BFV encryption formula:
 
 $$\mathbf{a}\cdot \mathbf{s} +\Delta m +\mathbf{e}$$
+$$\mathbf{a}\cdot \mathbf{s} + m +t\mathbf{e}$$
 
 We have $\mathbf{a}\sim\chi_\mathcal{T}$ and $\mathbf{e}\sim\chi_{\mathcal{N}}$. The probability density function of the discrete Gaussian distribution is given by $\rho_{\mu,\sigma^2}=e^{-\lVert\mathbf{x}-\mathbf{\mu}\rVert^2/2\sigma^2}$.
 
@@ -492,14 +493,14 @@ We propose a method to transform perfect information games into imperfect inform
 \begin{enumerate}
   \item \textbf{Key Generation:} Each player $i \in \{1, \ldots, n\}$ generates a key pair using the BFV scheme's key generation algorithms:
     \begin{align}
-      \texttt{sk}_i &\leftarrow \texttt{BFV.SecretKeyGen}(\lambda) \\
-      \texttt{pk}_i &\leftarrow \texttt{BFV.PublicKeyGen}(\texttt{sk}_i)
+      \texttt{sk}_i &\leftarrow \texttt{BFV.SecretKeyGen}(\lambda) 
     \end{align}
     where $\lambda$ is the security parameter.
+  \item \textbf{Key Sharing:} Each player $i$ shares their secret key $\texttt{sk}_i$ using Shamir's secret sharing scheme (Section~\ref{sec:shamir}) to create a threshold key sharing scheme. This process can also be implemented using other DKG schemes like Pedersen's VSS\cite{fudenberg1991game} or Feldman's VSS\cite{feldman1987practical}\cite{gennaro2007secure}.
   
   \item \textbf{Strategy Encryption:} Each player encrypts their strategy $\sigma_i$ using the BFV scheme described in Section~\ref{sec:BFV}:
     \begin{equation}
-      \sigma^\texttt{Enc}_i \leftarrow \texttt{BFV.Enc}(\texttt{pk}_i, \sigma_i)
+      \sigma^\texttt{Enc}_i \leftarrow \texttt{BFV.Enc}(\texttt{pk}, \sigma_i)
     \end{equation}
   
   \item \textbf{Encrypted Strategy Distribution:} Each player distributes their encrypted strategy $\sigma^\texttt{Enc}_i$ to all other players.
@@ -510,15 +511,12 @@ We propose a method to transform perfect information games into imperfect inform
     \end{equation}
     where $f_i$ is player $i$'s payoff function, computed in the encrypted domain using homomorphic operations.
   
-  \item \textbf{Payoff Decryption and Proof Generation:} Each player $i$ decrypts their payoff $\pi^\texttt{Enc}_i$ and generates a zero-knowledge proof $\Pi_i$:
-    \begin{align}
-      \pi_i &\leftarrow \texttt{BFV.Dec}(\texttt{sk}_i, \pi^\texttt{Enc}_i) \\
-      \Pi_i &\leftarrow \texttt{Zk.Prove}(\texttt{sk}_i, \pi^\texttt{Enc}_i, \pi_i, \texttt{BFV.Dec})
-    \end{align}
-    Here, $\Pi_i$ is a zero-knowledge proof demonstrating that the equation $\pi_i \eqq \texttt{BFV.Dec}(\pi^\texttt{Enc}_i)$ holds, without revealing any information about the private key $\texttt{sk}_i$. This proof allows other players to verify the correctness of $\pi_i$ while maintaining the confidentiality of $\texttt{sk}_i$.
+  \item \textbf{Payoff Decryption and Proof Generation:} $t$ out of $n$ parties decrypts the ciphertext into plaintext by threshold decryption. Each player $i$ generates a zero-knowledge proof $\Pi_i$ to demonstrate the correctness of their payoff computation:
+    \begin{equation}
+      \Pi_i \leftarrow \texttt{Zk.Prove}(\texttt{sk}_i, \pi^\texttt{Enc}_i, \pi_i, \texttt{BFV.Dec})
+    \end{equation}
+    where $\pi_i$ is the decrypted payoff.
 \end{enumerate}
-
- Each player can only observe the encrypted strategies $\sigma^\texttt{Enc}_i$ of other players, without access to their actual strategies $\sigma_i$. Simultaneously, the zero-knowledge proof $\Pi_i$ enables each player to demonstrate that they have honestly computed and reported their payoff $\pi_i$, without disclosing any information about their private key $\texttt{sk}_i$. The workflow of process is described in Algorithm~\ref{alg:perfect2imperfect}.
 
 \begin{algorithm}
   \caption{Transform Perfect Information Game to Imperfect Information Game with FHE}
